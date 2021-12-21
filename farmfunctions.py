@@ -69,6 +69,9 @@ def get_num_redhearts(all_hearts):
     return heart_count
 
 
+def handle_all_crops(farm_html, sheet):
+    all_crop_html = farm_html.find_all("div", class_="farming")
+
 def handle_all_animals(farm_html, sheet):
     all_animal_html = farm_html.find_all("div", class_="ranching")
     # print("TELL: ", all_animal_html)

@@ -49,7 +49,7 @@ async def run_main():
     job_elements = results.find_all("div", class_="post-content")
     # print(results.prettify())
     # print(len(job_elements))
-    # print(job_elements[0])
+    print(job_elements[0])
     # for job_element in job_elements:
     #     print(job_element, end="\n"*2)
 
