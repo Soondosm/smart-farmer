@@ -1,5 +1,0 @@
-*.json
-.env
-chromedriver
-__pychache__/
-
