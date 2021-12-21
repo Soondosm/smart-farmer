@@ -1,4 +1,5 @@
 *.json
 .env
 chromedriver
-__pychache__
+/__pychache__
+
