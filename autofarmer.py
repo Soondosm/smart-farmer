@@ -22,7 +22,7 @@ passwordStr = hxlogin['password']
 
 async def get_info(farm_html, sheet):
     farmfunctions.handle_all_animals(farm_html, sheet)
-    # return aya
+    farmfunctions.handle_all_crops(farm_html, sheet)
 
 
 
@@ -41,6 +41,7 @@ async def run_main():
     URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" # ICEGUIN'S FARM
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1128" #RELU'S FARM
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1409" #inferior's farm
+    # URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
     browser.get(URL)
     html = browser.page_source
     time.sleep(2)
@@ -49,7 +50,7 @@ async def run_main():
     job_elements = results.find_all("div", class_="post-content")
     # print(results.prettify())
     # print(len(job_elements))
-    print(job_elements[0])
+    # print(job_elements[0])
     # for job_element in job_elements:
     #     print(job_element, end="\n"*2)
 

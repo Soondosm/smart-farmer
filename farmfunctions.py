@@ -9,7 +9,6 @@ import numpy as np
 # import farmbot #import discord bot companion functionality
 import botfuncs
 
-
 AnimalToMat = {"sheep": "Common Thread", 
                 "fox": "Uncommon Thread",
                 "silkworm": "Rare Thread",
@@ -30,9 +29,7 @@ AnimalToMat = {"sheep": "Common Thread",
                 "orange cat":"Common Fish",
                 "black cat":"Common Bugs",
                 "raccoon":"random",
-                "bee house":"Honeycomb"
-                }
-
+                "bee house":"Honeycomb"            }
 MatToMath = {"Common Thread":0,
             "Uncommon Thread":0,
             "Rare Thread":0,
@@ -44,9 +41,7 @@ MatToMath = {"Common Thread":0,
             "Common Ingot":0,
             "Uncommon Ingot":0,
             "Rare Ingot":0,
-            "Common Wood":0,
-
-}
+            "Common Wood":0 }
 
 raccoonMatching = {
     1:"Common Herb",
@@ -59,10 +54,32 @@ raccoonMatching = {
     8:"Common Thread"
 }
 
+cropMatching = {
+    "apple":"Common Fruit",
+    "grape":"Uncommon Fruit",
+    "pumpkin":"Uncommon Fruit",
+    "cranberry":"Rare Fruit",
+    "beet":"Common Vegetable",
+    "bok choy":"Uncommon Vegetable",
+    "rhubarb":"Rare Vegetable",
+    "wheat":"Common Grain",
+    "corn":"Uncommon Grain",
+    "amaranth":"Rare Grain",
+    "garlic":"Common Herb",
+    "hops":"Uncommon Herb",
+    "tea leaf":"Rare Herb"
+}
+
+rarityYield = {
+    "Common":10,
+    "Uncommon":10,
+    "Rare":5,
+    "Epic":3
+}
+
 def get_num_redhearts(all_hearts):
     heart_count = 0
     for heart in all_hearts:
-        # stripped_heart = heart.find_all('i')
         if 'red' in str(heart):
             heart_count+=1
         # print(heart, "\n")
@@ -71,6 +88,16 @@ def get_num_redhearts(all_hearts):
 
 def handle_all_crops(farm_html, sheet):
     all_crop_html = farm_html.find_all("div", class_="farming")
+    is_cloak = 0
+    if "harvest cloak" in str(farm_html).lower():
+        print("WE HAVE A CLOAAAKKKK")
+        is_cloak = 1
+    for crop in all_crop_html:
+        crop = crop.find_all('h2')
+        crop_name = strip_animal(crop)
+        crop_count = get_crop_count(str(crop[0]))
+        print("found", crop_count, crop_name, "&", is_cloak, "harvest cloak")
+
 
 def handle_all_animals(farm_html, sheet):
     all_animal_html = farm_html.find_all("div", class_="ranching")
@@ -85,15 +112,26 @@ def handle_all_animals(farm_html, sheet):
         # animal_names.append(aminal.find_all('h2'))
         this_hearts = aminal.find_all('span')
         this_animal = aminal.find_all('h2')
-        print(this_animal)
+        # print(this_animal)
         pretty_animal = strip_animal(this_animal[0])
         num_animal, num_hearts = get_num_animals(this_hearts, this_animal[0])
-        print("Animal:", pretty_animal, " no:", num_animal, " no. w/ red hearts:", num_hearts)
+        # print("Animal:", pretty_animal, " no:", num_animal, " no. w/ red hearts:", num_hearts)
         animal_names.append(pretty_animal); num_animals.append(num_animal); num_redhearts.append(num_hearts)
-    sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet)
-    # animal_names = np.asarray(animal_names).flatten()    
+    sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet)  
     return animal_names
 
+
+def get_crop_count(this_crop):
+    # print(this_crop)
+    this_crop = re.sub('<h2>', '', this_crop)
+    this_crop = re.sub('</h2>', '', this_crop)
+    this_crop = re.sub(r"[\([{})\]]", '', str(this_crop))
+    # print(this_crop)
+    num = []
+    for s in this_crop:
+        if s.isdigit():
+            num.append(s)
+    return int("".join(num))
 
 
 def get_num_animals(this_hearts, this_animal):
@@ -112,13 +150,16 @@ def get_num_animals(this_hearts, this_animal):
 
 def strip_animal(this_animal):
     this_animal = re.sub('<[^<]+?>', '', str(this_animal))
+    # print(this_animal)
+    this_animal = re.sub(r"[\([{})\]]", '', str(this_animal))
+    # print(this_animal)
     this_animal = re.split(';|!| |, |\*|\n', str(this_animal))
-    print(this_animal)
+    # print(this_animal)
     while '' in this_animal:
         this_animal.remove('')
-    print(this_animal)
+    # print(this_animal)
     this_animal = this_animal = this_animal[0].lower()
-    print(this_animal)
+    # print(this_animal)
     return this_animal
 
 def sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet):
@@ -164,7 +205,15 @@ async def get_raccoon(sheet):
         # print("BEFORE", chosen_mat, curr_total[mat_index], type(curr_total[mat_index]))
         curr_total[mat_index] = [(int(curr_total[mat_index])+1)]
         print("RACCOON", i, chosen_mat, curr_total[mat_index])
-        result_str += "User, your " + str(i+1)+"th raccoon rolled a " + str(result) + "/8. It found one " + chosen_mat + ". You now have " + str(curr_total[mat_index]) + "\n"
+        num_place = ""
+        if i+1 == 1: 
+            num_place = "st"
+        elif i+1 == 2:
+            num_place = "nd"
+        elif i+1 == 3:
+            num_place = "rd"
+        else: num_place = "th"
+        result_str += "User, your " + str(i+1)+num_place+ " raccoon yield is " + str(result) + "/8: " + chosen_mat + ". You now have " + str(curr_total[mat_index][0]) + "\n"
         await botfuncs.edit_msg_content(result_str)
     await botfuncs.triggerTrue(True) #permit bot to go
     sheet.update('F:F', curr_total.tolist())
@@ -182,7 +231,7 @@ async def increment_total(sheet):
     total_locs = sheet.col_values(6) # GET RUNNING TOTAL SO FAR
     newcol = []
     for i in range(1, len(week_locs)):
-        print(i, week_locs[i], total_locs[i])
+        # print(i, week_locs[i], total_locs[i])
         newcol.append([int(week_locs[i])+int(total_locs[i])])
     sheet.update('F2:F', newcol)
     # sheet.update_cells(newcol)
