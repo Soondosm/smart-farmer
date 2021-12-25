@@ -38,20 +38,20 @@ async def run_main():
     logmein = browser.find_element_by_xpath("//input[@type='submit']")
     logmein.click()
 
-    URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" # ICEGUIN'S FARM
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1128" #RELU'S FARM
+    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" # ICEGUIN'S FARM
+    URL = "https://hxllmth.jcink.net/index.php?showtopic=1128" #RELU'S FARM
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1409" #inferior's farm
     # URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1417" # boo's farm
     browser.get(URL)
+    time.sleep(8)
     html = browser.page_source
-    time.sleep(2)
     soup = BeautifulSoup(html, features="lxml")
     results = soup.find(id="sascon")
     job_elements = results.find_all("div", class_="post-content")
     # print(results.prettify())
     # print(len(job_elements))
-    # print(job_elements[0])
+    print(job_elements[0].prettify())
     # for job_element in job_elements:
     #     print(job_element, end="\n"*2)
 

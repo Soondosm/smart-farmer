@@ -71,16 +71,27 @@ cropMatching = {
     "hops":"Uncommon Herb",
     "tea leaf":"Rare Herb"}
 
-rarityYield = {
+rarityCropYield = {
     "Common":10,
     "Uncommon":10,
     "Rare":5,
     "Epic":3}
 
+tool_list = ["wooden fishing rod", "silver fishing rod", "golden fishing rod", "wooden bug net",
+"silver bug net", "golden bug net"]
+toolYield = {
+    tool_list[0]: "Common Fish",
+    tool_list[1]: "Uncommon Fish",
+    tool_list[2]: "Rare Fish",
+    tool_list[3]: "Common Bug",
+    tool_list[4]: "Uncommon Bug",
+    tool_list[5]: "Rare Bug"}
+
+
 def get_num_redhearts(all_hearts):
     heart_count = 0
     for heart in all_hearts:
-        if 'red' in str(heart):
+        if 'red' in str(heart) or  'rgb(255, 0, 0)' in str(heart):
             heart_count+=1
         # print(heart, "\n")
     return heart_count
@@ -90,6 +101,7 @@ async def handle_all_crops(farm_html, sheet):
     total_locs = sheet.col_values(6)
     product_locs = sheet.col_values(4)
     is_cloak = 0
+    total_locs = handle_misc(farm_html, total_locs)
     if "harvest cloak" in str(farm_html).lower():
         print("WE HAVE A CLOAAAKKKK")
         is_cloak = 1
@@ -108,11 +120,15 @@ async def handle_all_crops(farm_html, sheet):
     total_locs = np.reshape(total_locs, (len(total_locs), 1))
     sheet.update('F:F', total_locs.tolist())
 
+def handle_misc(farm_html, total_locs):
+    for item in tool_list:
+        if item in str(farm_html).lower():
+            print() # TO CHANGE
 
 
 async def roll_crop(product_name, crop_name, crop_count, is_cloak, total):
     rarity = product_name.split(" ")[0]
-    max_range = rarityYield[rarity]
+    max_range = rarityCropYield[rarity]
     result_str = "Rolling " + str(crop_count) + " " + crop_name 
     if is_cloak == 1:
         result_str += " + " + str(crop_count)
@@ -193,23 +209,26 @@ def strip_animal(this_animal):
     # print(this_animal)
     while '' in this_animal:
         this_animal.remove('')
-    # print(this_animal)
-    this_animal = this_animal = this_animal[0].lower()
+    index = 0
+    # for s in this_animal[index]:
+    if this_animal[index][0].isdigit():
+        index +=1
+    this_animal = this_animal = this_animal[index].lower()
     # print(this_animal)
     return this_animal
 
 def sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet):
     locs = sheet.col_values(1)
     animal_num_col = sheet.col_values(2)
-    new_animal_col = np.zeros(len(animal_num_col))
+    new_animal_col = np.full(len(animal_num_col), '0', dtype=object); new_animal_col[0] = animal_num_col[0]
     new_animal_col = np.reshape(new_animal_col, (len(new_animal_col), 1))
     animal_num_col = np.reshape(animal_num_col, (len(animal_num_col), 1))
     animal_redhearts_col = sheet.col_values(3)
-    new_redhearts_col = np.zeros(len(animal_redhearts_col)); new_redhearts_col[0] = animal_redhearts_col[0]
+    new_redhearts_col = np.full(len(animal_redhearts_col), '0', dtype=object); new_redhearts_col[0] = animal_redhearts_col[0]
     new_redhearts_col = np.reshape(new_redhearts_col, (len(new_redhearts_col), 1))
     animal_redhearts_col = np.reshape(animal_redhearts_col, (len(animal_redhearts_col), 1))
     perweek_col = sheet.col_values(5)
-    new_perweek = np.zeros(len(perweek_col))
+    new_perweek = np.full(len(perweek_col), '0', dtype=object); new_perweek[0] = perweek_col[0]
     new_perweek = np.reshape(new_perweek, (len(new_perweek), 1))
     perweek_col = np.reshape(perweek_col, (len(perweek_col), 1))
     per_week = get_per_week(num_animals, num_redhearts)
@@ -286,8 +305,10 @@ async def increment_total(sheet):
     total_locs = sheet.col_values(6) # GET RUNNING TOTAL SO FAR
     newcol = []
     for i in range(1, len(week_locs)):
-        # print(i, week_locs[i], total_locs[i])
-        newcol.append([int(week_locs[i])+int(total_locs[i])])
+        if week_locs[i] == "NA":
+            newcol.append(["NA"])
+        else:
+            newcol.append([int(week_locs[i])+int(total_locs[i])])
     sheet.update('F2:F', newcol)
     # sheet.update_cells(newcol)
     await get_raccoon(sheet)
