@@ -52,7 +52,7 @@ async def check_for_rolling(channel):
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} has connected to Discord!')
+    print(f'{bot.user} has connected to Discord!!!!')
     channel = bot.get_channel(603679783347421208) # FLIP-TESTS-BOTS-HERE CHANNEL
     if channel:
         await botfuncs.set_channel(channel)
