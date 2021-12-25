@@ -101,7 +101,7 @@ async def handle_all_crops(farm_html, sheet):
     total_locs = sheet.col_values(6)
     product_locs = sheet.col_values(4)
     is_cloak = 0
-    total_locs = handle_misc(farm_html, total_locs)
+    total_locs = handle_misc(farm_html, total_locs, product_locs)
     if "harvest cloak" in str(farm_html).lower():
         print("WE HAVE A CLOAAAKKKK")
         is_cloak = 1
@@ -120,11 +120,20 @@ async def handle_all_crops(farm_html, sheet):
     total_locs = np.reshape(total_locs, (len(total_locs), 1))
     sheet.update('F:F', total_locs.tolist())
 
-def handle_misc(farm_html, total_locs):
+def handle_misc(farm_html, total_locs, product_locs):
+    RESULT_STRING.append("Rolling rods and nets: \n")
+    count = 0
     for item in tool_list:
         if item in str(farm_html).lower():
-            print() # TO CHANGE
-
+            count += 1
+            this_roll = random.randint(1, 10)
+            prod_index = product_locs.index(toolYield[item]) # index of product we're adding to
+            total_locs[prod_index] = int(total_locs[prod_index]) + this_roll
+            RESULT_STRING.append(item+", "+toolYield[item]+
+            ":\n**"+str(this_roll)+"**. You now have "+str(total_locs[prod_index]))
+    if count == 0:
+        RESULT_STRING.append("You have no rods or nets.\n")
+    return total_locs
 
 async def roll_crop(product_name, crop_name, crop_count, is_cloak, total):
     rarity = product_name.split(" ")[0]
@@ -141,7 +150,7 @@ async def roll_crop(product_name, crop_name, crop_count, is_cloak, total):
         final_val += this_roll
     roll_set.sort(reverse=True)
     new_total = int(final_val) + int(total)
-    result_str += str(roll_set) + "\n= **" + str(final_val) + " " + crop_name + "** " + ". You now have " + str(new_total)
+    result_str += '`' + str(roll_set)+'`'+ "\n= **" + str(final_val) + " " + crop_name + "** " + ". You now have " + str(new_total)
     print(result_str)
     RESULT_STRING.append(result_str)
     # await botfuncs.edit_msg_content(result_str)
@@ -303,10 +312,12 @@ def get_per_week(num_animals, num_redhearts):
 async def increment_total(sheet):
     week_locs = sheet.col_values(5) #GETS PER WEEK COLUMN VALUES
     total_locs = sheet.col_values(6) # GET RUNNING TOTAL SO FAR
+    aniname_locs = sheet.col_values(1)
     newcol = []
     for i in range(1, len(week_locs)):
-        if week_locs[i] == "NA":
-            newcol.append(["NA"])
+        if i < len(aniname_locs):
+            if aniname_locs[i] == "raccoon" or aniname_locs[i] == "pig":
+                newcol.append(["NA"])
         else:
             newcol.append([int(week_locs[i])+int(total_locs[i])])
     sheet.update('F2:F', newcol)
