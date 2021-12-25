@@ -21,14 +21,14 @@ usernameStr = hxlogin['username']
 passwordStr = hxlogin['password']
 
 async def get_info(farm_html, sheet):
-    farmfunctions.handle_all_animals(farm_html, sheet)
-    farmfunctions.handle_all_crops(farm_html, sheet)
+    await farmfunctions.handle_all_animals(farm_html, sheet)
+    await farmfunctions.handle_all_crops(farm_html, sheet)
 
 
 
 
 async def run_main():
-    browser = webdriver.Chrome('/Users/soondos/Desktop/independent/itsahardknockendo/chromedriver')
+    browser = webdriver.Chrome('./chromedriver')
     browser.get(('https://hxllmth.jcink.net/index.php?act=Login&CODE=00'))
     username = browser.find_element_by_name('UserName')
     username.send_keys(usernameStr)
@@ -42,6 +42,7 @@ async def run_main():
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1128" #RELU'S FARM
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1409" #inferior's farm
     # URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
+    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1417" # boo's farm
     browser.get(URL)
     html = browser.page_source
     time.sleep(2)
