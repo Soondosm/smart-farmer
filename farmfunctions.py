@@ -116,6 +116,7 @@ async def handle_all_crops(farm_html, sheet):
         # print("found", crop_count, crop_name, "&", is_cloak, "harvest cloak")
         product_name = cropMatching[crop_name]
         prod_index = product_locs.index(product_name)
+        print(product_name, prod_index)
         total_locs[prod_index] = await roll_crop(product_name, crop_name, crop_count, is_cloak, total_locs[prod_index])
     total_locs = np.reshape(total_locs, (len(total_locs), 1))
     sheet.update('F:F', total_locs.tolist())
@@ -151,7 +152,6 @@ async def roll_crop(product_name, crop_name, crop_count, is_cloak, total):
     roll_set.sort(reverse=True)
     new_total = int(final_val) + int(total)
     result_str += '`' + str(roll_set)+'`'+ "\n= **" + str(final_val) + " " + crop_name + "** " + ". You now have " + str(new_total)
-    print(result_str)
     RESULT_STRING.append(result_str)
     # await botfuncs.edit_msg_content(result_str)
     # await botfuncs.triggerTrue(True) #permit bot to go
@@ -266,7 +266,7 @@ async def get_raccoon(sheet):
     locs = sheet.col_values(1) # get all animal names
     raccoon_row = locs.index("raccoon")+1
     num_racroll = int(sheet.cell(raccoon_row, 2).value) + int(sheet.cell(raccoon_row, 3).value) #num animal +
-    print("RICKROLLS", num_racroll)
+    # print("RICKROLLS", num_racroll)
     if num_racroll == 0:
         RESULT_STRING.append("You have no raccoons. Sad.")
     else:
@@ -297,7 +297,7 @@ async def get_raccoon(sheet):
 
 
 async def display_to_discord():
-    print(len(RESULT_STRING), RESULT_STRING)
+    # print(len(RESULT_STRING), RESULT_STRING)
     for str in RESULT_STRING:
        await botfuncs.print_to_channel(str)
     # await botfuncs.edit_msg_content(RESULT_STRING)
@@ -313,15 +313,20 @@ async def increment_total(sheet):
     week_locs = sheet.col_values(5) #GETS PER WEEK COLUMN VALUES
     total_locs = sheet.col_values(6) # GET RUNNING TOTAL SO FAR
     aniname_locs = sheet.col_values(1)
-    newcol = []
+    print(len(aniname_locs), aniname_locs)
+    # newcol =  np.full(len(week_locs), '0', dtype=object); newcol[0] = tp[0]
     for i in range(1, len(week_locs)):
-        if i < len(aniname_locs):
-            if aniname_locs[i] == "raccoon" or aniname_locs[i] == "pig":
-                newcol.append(["NA"])
+        # if i < len(aniname_locs):
+        # print(aniname_locs[i], week_locs[i])
+        if aniname_locs[i] == "raccoon" or aniname_locs[i] == "pig":
+            total_locs[i] = "NA"
         else:
-            newcol.append([int(week_locs[i])+int(total_locs[i])])
-    sheet.update('F2:F', newcol)
-    # sheet.update_cells(newcol)
+            total_locs[i] = (int(week_locs[i])+int(total_locs[i]))
+            print(aniname_locs[i], week_locs[i], int(week_locs[i])+int(total_locs[i]))
+    print(total_locs)
+    total_locs = np.reshape(total_locs, (len(total_locs), 1))
+    sheet.update('F:F', total_locs.tolist())
+    # UPDATE STRING 
     await get_raccoon(sheet)
     await display_to_discord()
 

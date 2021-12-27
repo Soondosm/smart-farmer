@@ -40,11 +40,11 @@ async def run_main():
 
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" # ICEGUIN'S FARM
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1128" #RELU'S FARM
-    URL = "https://hxllmth.jcink.net/index.php?showtopic=1409" #inferior's farm
-    # URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
+    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1409" #inferior's farm
+    URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1417" # boo's farm
     browser.get(URL)
-    time.sleep(8)
+    time.sleep(2)
     html = browser.page_source
     soup = BeautifulSoup(html, features="lxml")
     results = soup.find(id="sascon")
