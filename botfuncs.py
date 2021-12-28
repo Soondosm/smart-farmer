@@ -3,8 +3,9 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from discord.ext import tasks
 import json
+from apiclient import discovery
 
-user_json = json.load(open('user.json'))
+user_json = json.load(open('users.json'))
 isActive = False
 msg_content = None
 channel = None
@@ -34,5 +35,9 @@ async def getContent():
     return msg_content
 
 
-async def register_new():
+async def register_new(ctx, *args):
+    this_usr = ctx.message.author
+    if this_usr not in user_json["user_sheets"]: # if this user has no farm
+        user_json["user_sheets"][this_usr] = ""
+    await ctx.send("{} is your id".format(this_usr.mention))
     print()

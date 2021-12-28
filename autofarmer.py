@@ -13,6 +13,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pprint
 import farmfunctions
 from datetime import datetime
+from apiclient import discovery
 import asyncio
 
 
@@ -44,7 +45,7 @@ async def run_main():
     # URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1417" # boo's farm
     browser.get(URL)
-    time.sleep(8)
+    time.sleep(2)
     html = browser.page_source
     soup = BeautifulSoup(html, features="lxml")
     results = soup.find(id="sascon")
@@ -63,9 +64,14 @@ async def run_main():
     file_name = 'client_key.json'
     creds = ServiceAccountCredentials.from_json_keyfile_name(file_name,scope)
     client = gspread.authorize(creds)
+    service = discovery.build('drive', 'v3', credentials=creds)
+    stuff = service.files().list()
+    # stuff2 = stuff.get('files',[])
+    print(stuff)
+
 
     #Fetch the sheet
-    sheet = client.open('TEST1').sheet1
+    sheet = client.open('TEST3').sheet1
     python_sheet = sheet.get_all_records()
     # post_count = python_sheet[0]['POSTS']
     # print(post_count)
