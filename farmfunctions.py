@@ -313,6 +313,7 @@ async def increment_total(sheet):
     week_locs = sheet.col_values(5) #GETS PER WEEK COLUMN VALUES
     total_locs = sheet.col_values(6) # GET RUNNING TOTAL SO FAR
     aniname_locs = sheet.col_values(1)
+    prodname_locs = sheet.col_values(4)
     print(len(aniname_locs), aniname_locs)
     # newcol =  np.full(len(week_locs), '0', dtype=object); newcol[0] = tp[0]
     for i in range(1, len(week_locs)):
@@ -322,11 +323,28 @@ async def increment_total(sheet):
             total_locs[i] = "NA"
         else:
             total_locs[i] = (int(week_locs[i])+int(total_locs[i]))
-            print(aniname_locs[i], week_locs[i], int(week_locs[i])+int(total_locs[i]))
-    print(total_locs)
+            # print(aniname_locs[i], week_locs[i], int(week_locs[i])+int(total_locs[i]))
     total_locs = np.reshape(total_locs, (len(total_locs), 1))
     sheet.update('F:F', total_locs.tolist())
     # UPDATE STRING 
+    result_str = "This week, your animals have produced the following: \n"
+    # print(aniname_locs)
+    # while '' in aniname_locs:
+    #     aniname_locs.remove('')
+    # while ' ' in aniname_locs:
+    #     aniname_locs.remove(' ')
+    aniname_locs.pop(0) # REMOVE COLUMN TITLE, 'ANIMAL NAME'
+    # print(aniname_locs)
+    for ani in aniname_locs:
+        if ani in AnimalToMat and ani != "pig" and ani != "raccoon":
+            index = prodname_locs.index(AnimalToMat[ani])
+            # index = week_locs.index(mat)
+            week_val = week_locs[index]
+            total_val = total_locs[index]
+            if int(week_val) > 0: # if no animals are producing this week, ignore
+                result_str+= (ani + " - " + AnimalToMat[ani] + " - **" + str(week_val)  
+                + "** totaling **" + str(total_val[0]) + "** \n")
     await get_raccoon(sheet)
+    RESULT_STRING.append(result_str)
     await display_to_discord()
 

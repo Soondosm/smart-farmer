@@ -6,16 +6,13 @@ from discord.ext import commands
 from discord.ext import tasks
 import autofarmer
 import botfuncs
+import json
 # import farmfunc
-
-this_user = "bitch" # the person who is currently having their stuff rolled for
-
-
 
 # BOT START AND LOOP
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
-bot = commands.Bot(command_prefix='f.')
+bot = commands.Bot(command_prefix='f!')
 # channel = None
 
 # client = discord.Client()
@@ -48,6 +45,10 @@ async def check_for_rolling(channel):
         # pass
 
 
+@bot.command()
+async def register(ctx, *args):
+     await ctx.send('{} arguments: {}'.format(len(args), ', '.join(args)))
+
 
 
 @bot.event
@@ -60,7 +61,6 @@ async def on_ready():
         print("Failed.", type(channel))
     check_for_rolling.start(channel)
     
-    await autofarmer.run_main()
-
+    await autofarmer.run_main() # UNCOMMENT LATER
 
 bot.run(TOKEN)

@@ -2,8 +2,9 @@ import discord
 from dotenv import load_dotenv
 from discord.ext import commands
 from discord.ext import tasks
+import json
 
-
+user_json = json.load(open('user.json'))
 isActive = False
 msg_content = None
 channel = None
@@ -31,3 +32,7 @@ def getTrigger():
 
 async def getContent():
     return msg_content
+
+
+async def register_new():
+    print()
