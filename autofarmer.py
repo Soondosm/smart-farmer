@@ -15,6 +15,7 @@ import farmfunctions
 from datetime import datetime
 from apiclient import discovery
 import asyncio
+import botfuncs
 
 
 hxlogin = json.load(open('hxlogin.json'))
@@ -24,9 +25,6 @@ passwordStr = hxlogin['password']
 async def get_info(farm_html, sheet):
     await farmfunctions.handle_all_animals(farm_html, sheet)
     await farmfunctions.handle_all_crops(farm_html, sheet)
-
-
-
 
 async def run_main():
     browser = webdriver.Chrome('./chromedriver')
@@ -50,11 +48,6 @@ async def run_main():
     soup = BeautifulSoup(html, features="lxml")
     results = soup.find(id="sascon")
     job_elements = results.find_all("div", class_="post-content")
-    # print(results.prettify())
-    # print(len(job_elements))
-    # print(job_elements[0].prettify())
-    # for job_element in job_elements:
-    #     print(job_element, end="\n"*2)
 
     #Authorize the API
     scope = [
@@ -63,12 +56,8 @@ async def run_main():
         ]
     file_name = 'client_key.json'
     creds = ServiceAccountCredentials.from_json_keyfile_name(file_name,scope)
+    botfuncs.set_creds(creds)
     client = gspread.authorize(creds)
-    service = discovery.build('drive', 'v3', credentials=creds)
-    stuff = service.files().list()
-    # stuff2 = stuff.get('files',[])
-    print(stuff)
-
 
     #Fetch the sheet
     sheet = client.open('TEST3').sheet1

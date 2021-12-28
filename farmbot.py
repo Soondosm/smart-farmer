@@ -47,7 +47,7 @@ async def check_for_rolling(channel):
 
 @bot.command()
 async def register(ctx, *args):
-     await ctx.send('{} arguments: {}'.format(len(args), ', '.join(args)))
+    #  await ctx.send('{} arguments: {}'.format(len(args), ', '.join(args)))
      await botfuncs.register_new(ctx, *args)
 
 
