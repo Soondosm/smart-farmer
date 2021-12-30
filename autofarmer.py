@@ -26,28 +26,11 @@ async def get_info(farm_html, sheet):
     await farmfunctions.handle_all_animals(farm_html, sheet)
     await farmfunctions.handle_all_crops(farm_html, sheet)
 
+
+
 async def run_main():
-    browser = webdriver.Chrome('./chromedriver')
-    browser.get(('https://hxllmth.jcink.net/index.php?act=Login&CODE=00'))
-    username = browser.find_element_by_name('UserName')
-    username.send_keys(usernameStr)
-    password = browser.find_element_by_name('PassWord')
-    password.send_keys(passwordStr)
-
-    logmein = browser.find_element_by_xpath("//input[@type='submit']")
-    logmein.click()
-
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" # ICEGUIN'S FARM
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1128" #RELU'S FARM
     URL = "https://hxllmth.jcink.net/index.php?showtopic=1409" #inferior's farm
-    # URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1417" # boo's farm
-    browser.get(URL)
-    time.sleep(2)
-    html = browser.page_source
-    soup = BeautifulSoup(html, features="lxml")
-    results = soup.find(id="sascon")
-    job_elements = results.find_all("div", class_="post-content")
+    job_elements = await botfuncs.selenium_login(URL)
 
     #Authorize the API
     scope = [
@@ -56,7 +39,7 @@ async def run_main():
         ]
     file_name = 'client_key.json'
     creds = ServiceAccountCredentials.from_json_keyfile_name(file_name,scope)
-    botfuncs.set_creds(creds)
+    await botfuncs.set_creds(creds)
     client = gspread.authorize(creds)
 
     #Fetch the sheet
@@ -69,5 +52,5 @@ async def run_main():
     await get_info(job_elements[0], sheet)
     # if datetime.today().weekday() == 6: # IF THE DAY IS SUNDAY
     await farmfunctions.increment_total(sheet)
-    pp = pprint.PrettyPrinter()
+    # pp = pprint.PrettyPrinter()
     # pp.pprint(python_sheet) # prints google spreadsheet

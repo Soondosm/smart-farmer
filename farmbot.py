@@ -47,11 +47,23 @@ async def check_for_rolling(channel):
 
 @bot.command()
 async def register(ctx, *args):
+    global bot
     #  await ctx.send('{} arguments: {}'.format(len(args), ', '.join(args)))
-     await botfuncs.register_new(ctx, *args)
+    await botfuncs.register_new(ctx, *args)
 
 
-
+@bot.command()
+async def roll(ctx, arg1):
+    global bot
+    arg1 = arg1.lower()
+    if arg1  == 'off':
+        await ctx.send(f"ok auto rolls off")
+    elif arg1 == 'on':
+        await ctx.send(f"ok on")
+    elif arg1 == 'weekly':
+        await ctx.send(f"aight bet lemme get ur stuff")
+    else:
+        await ctx.send(f"bitch idk what u sayin")
 
 @bot.event
 async def on_ready():
@@ -63,6 +75,7 @@ async def on_ready():
         print("Failed.", type(channel))
     check_for_rolling.start(channel)
     
+    await botfuncs.set_bot(bot)
     await autofarmer.run_main() # UNCOMMENT LATER
 
 bot.run(TOKEN)
