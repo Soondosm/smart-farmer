@@ -23,27 +23,17 @@ usernameStr = hxlogin['username']
 passwordStr = hxlogin['password']
 
 async def get_info(farm_html, sheet):
-    await farmfunctions.handle_all_animals(farm_html, sheet)
+    await botfuncs.handle_all_animals(farm_html, sheet)
     await farmfunctions.handle_all_crops(farm_html, sheet)
 
 
 
-async def run_main():
+async def run_main(sheet_name):
     URL = "https://hxllmth.jcink.net/index.php?showtopic=1409" #inferior's farm
     job_elements = await botfuncs.selenium_login(URL)
-
-    #Authorize the API
-    scope = [
-        'https://www.googleapis.com/auth/drive',
-        'https://www.googleapis.com/auth/drive.file'
-        ]
-    file_name = 'client_key.json'
-    creds = ServiceAccountCredentials.from_json_keyfile_name(file_name,scope)
-    await botfuncs.set_creds(creds)
-    client = gspread.authorize(creds)
-
+    client = await botfuncs.get_client()
     #Fetch the sheet
-    sheet = client.open('TEST3').sheet1
+    sheet = client.open(sheet_name).sheet1
     python_sheet = sheet.get_all_records()
     # post_count = python_sheet[0]['POSTS']
     # print(post_count)

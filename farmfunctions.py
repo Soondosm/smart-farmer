@@ -88,14 +88,6 @@ toolYield = {
     tool_list[5]: "Rare Bug"}
 
 
-def get_num_redhearts(all_hearts):
-    heart_count = 0
-    for heart in all_hearts:
-        if 'red' in str(heart) or  'rgb(255, 0, 0)' in str(heart):
-            heart_count+=1
-        # print(heart, "\n")
-    return heart_count
-
 async def handle_all_crops(farm_html, sheet):
     all_crop_html = farm_html.find_all("div", class_="farming")
     total_locs = sheet.col_values(6)
@@ -107,7 +99,7 @@ async def handle_all_crops(farm_html, sheet):
         is_cloak = 1
     for crop in all_crop_html:
         crop = crop.find_all('h2')
-        crop_name = strip_animal(crop)
+        crop_name = botfuncs.strip_animal(crop)
         if crop_name == "tea":
             crop_name += " leaf"
         elif crop_name == "bok":
@@ -159,29 +151,6 @@ async def roll_crop(product_name, crop_name, crop_count, is_cloak, total):
 
 
 
-
-async def handle_all_animals(farm_html, sheet):
-    all_animal_html = farm_html.find_all("div", class_="ranching")
-    # print("TELL: ", all_animal_html)
-    with_hearts = [] # span tag, allows us to check how many "red" there is
-    num_animals = [] # number of animals present on farm
-    num_redhearts = [] # number of animals with red hearts
-    animal_names = [] # prettified animal name
-    for aminal in all_animal_html:
-        with_hearts.append(aminal.find_all('span'))
-        # animal_names.append(strip_animal(aminal.find_all('h2')))
-        # animal_names.append(aminal.find_all('h2'))
-        this_hearts = aminal.find_all('span')
-        this_animal = aminal.find_all('h2')
-        # print(this_animal)
-        pretty_animal = strip_animal(this_animal[0])
-        num_animal, num_hearts = get_num_animals(this_hearts, this_animal[0])
-        # print("Animal:", pretty_animal, " no:", num_animal, " no. w/ red hearts:", num_hearts)
-        animal_names.append(pretty_animal); num_animals.append(num_animal); num_redhearts.append(num_hearts)
-    sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet)  
-    return animal_names
-
-
 def get_crop_count(this_crop):
     # print(this_crop)
     this_crop = re.sub('<h2>', '', this_crop)
@@ -194,72 +163,6 @@ def get_crop_count(this_crop):
             num.append(s)
     return int("".join(num))
 
-
-def get_num_animals(this_hearts, this_animal):
-    all_hearts = this_hearts[0].find_all('i')
-    num_animals = len(all_hearts)
-    # print("\n \n SEPARATED HEARTS: ", len(all_hearts), all_hearts, "\n")
-    num_redhearts = get_num_redhearts(all_hearts)
-    this_animal = str(this_animal).replace('2', "")
-    if '2' in str(this_animal) and len(all_hearts) < 2:
-        num_animals = 2
-    elif '3' in str(this_animal) and len(all_hearts) < 3:
-        num_animals = 3
-    # print("num animals: ", len(all_hearts), "num red: ", num_redhearts)
-    return num_animals, num_redhearts
-
-
-def strip_animal(this_animal):
-    this_animal = re.sub('<[^<]+?>', '', str(this_animal))
-    # print(this_animal)
-    this_animal = re.sub(r"[\([{})\]]", '', str(this_animal))
-    # print(this_animal)
-    this_animal = re.split(';|!| |, |\*|\n', str(this_animal))
-    # print(this_animal)
-    while '' in this_animal:
-        this_animal.remove('')
-    index = 0
-    # for s in this_animal[index]:
-    if this_animal[index][0].isdigit():
-        index +=1
-    this_animal = this_animal = this_animal[index].lower()
-    # print(this_animal)
-    return this_animal
-
-def sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet):
-    locs = sheet.col_values(1)
-    animal_num_col = sheet.col_values(2)
-    new_animal_col = np.full(len(animal_num_col), '0', dtype=object); new_animal_col[0] = animal_num_col[0]
-    new_animal_col = np.reshape(new_animal_col, (len(new_animal_col), 1))
-    animal_num_col = np.reshape(animal_num_col, (len(animal_num_col), 1))
-    animal_redhearts_col = sheet.col_values(3)
-    new_redhearts_col = np.full(len(animal_redhearts_col), '0', dtype=object); new_redhearts_col[0] = animal_redhearts_col[0]
-    new_redhearts_col = np.reshape(new_redhearts_col, (len(new_redhearts_col), 1))
-    animal_redhearts_col = np.reshape(animal_redhearts_col, (len(animal_redhearts_col), 1))
-    perweek_col = sheet.col_values(5)
-    new_perweek = np.full(len(perweek_col), '0', dtype=object); new_perweek[0] = perweek_col[0]
-    new_perweek = np.reshape(new_perweek, (len(new_perweek), 1))
-    perweek_col = np.reshape(perweek_col, (len(perweek_col), 1))
-    per_week = get_per_week(num_animals, num_redhearts)
-    for i in range(len(animal_names)):
-                # sheet.find(animal_names[i])
-        if animal_names[i] == "bees" or animal_names[i] == "bee":
-            rownum = locs.index("bee house")#+1
-        else:
-            rownum = locs.index(animal_names[i]) #+1 # row number of the animal we're considering
-        new_animal_col[rownum] = [num_animals[i]]
-        new_redhearts_col[rownum] = [str(num_redhearts[i])]
-        if locs[rownum] == "pig" or locs[rownum] == "raccoon":
-            new_perweek[rownum] = ["NA"]
-        else:
-            new_perweek[rownum] = [per_week[i]]
-        # sheet.update_cell(rownum, 2, str(num_animals[i]))
-        # sheet.update_cell(rownum, 3, num_redhearts[i])
-        # sheet.update_cell(rownum, 5, per_week[i])
-        print("updating", animal_names[i])
-    sheet.update('B:B', new_animal_col.tolist()) #DATA MUST BE PRESENTED AS 2D ARRAY
-    sheet.update('C:C', new_redhearts_col.tolist())
-    sheet.update('E:E', new_perweek.tolist())
 
 
 async def get_raccoon(sheet):
@@ -302,12 +205,6 @@ async def display_to_discord():
        await botfuncs.print_to_channel(str)
     # await botfuncs.edit_msg_content(RESULT_STRING)
     # await botfuncs.triggerTrue(True)
-
-def get_per_week(num_animals, num_redhearts):
-    per_week = [] #array to hold each animal set's total output per week (assuming 3 posts week)
-    for i in range(len(num_animals)):
-        per_week.append(((num_animals[i]*2) + num_redhearts[i])*3)
-    return per_week
 
 async def increment_total(sheet):
     week_locs = sheet.col_values(5) #GETS PER WEEK COLUMN VALUES

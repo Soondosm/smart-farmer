@@ -65,6 +65,11 @@ async def roll(ctx, arg1):
     else:
         await ctx.send(f"bitch idk what u sayin")
 
+@bot.command()
+async def edit(ctx, *args):
+    await botfuncs.edit_info(ctx, *args)
+
+
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord!!!!')
@@ -75,7 +80,8 @@ async def on_ready():
         print("Failed.", type(channel))
     check_for_rolling.start(channel)
     
-    await botfuncs.set_bot(bot)
-    await autofarmer.run_main() # UNCOMMENT LATER
+    await botfuncs.set_bot(bot) # set the botfuncs.py bot to this bot so we can keep track
+    await botfuncs.initialize_client() # boot up google spreadsheet client
+    # await autofarmer.run_main() # UNCOMMENT LATER
 
 bot.run(TOKEN)
