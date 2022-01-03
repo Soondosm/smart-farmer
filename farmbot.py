@@ -69,6 +69,13 @@ async def roll(ctx, arg1):
 async def edit(ctx, *args):
     await botfuncs.edit_info(ctx, *args)
 
+@bot.command()
+async def show(ctx, *args):
+    await botfuncs.show_farm(ctx, *args)
+
+@bot.command()
+async def sync(ctx, *args):
+    await botfuncs.sync_sheet(ctx, *args)
 
 @bot.event
 async def on_ready():
@@ -82,6 +89,6 @@ async def on_ready():
     
     await botfuncs.set_bot(bot) # set the botfuncs.py bot to this bot so we can keep track
     await botfuncs.initialize_client() # boot up google spreadsheet client
-    # await autofarmer.run_main() # UNCOMMENT LATER
+    # await autofarmer.run_main('TEST1') # UNCOMMENT LATER
 
 bot.run(TOKEN)

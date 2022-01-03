@@ -18,6 +18,8 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 JSON_NAME = 'users.json'
+VALID_STR = "One moment, checking URL validity..."
+YOUDONTHAVEAFARM = ", you do not have a registered farm. Please register with: ```f!register MY GOOGLE SPREADSHEET NAME```"
 
 hxlogin = json.load(open('hxlogin.json'))
 usernameStr = hxlogin['username']
@@ -103,6 +105,7 @@ def strip_animal(this_animal):
 def get_num_redhearts(all_hearts):
     heart_count = 0
     for heart in all_hearts:
+        print(heart)
         if 'red' in str(heart) or  'rgb(255, 0, 0)' in str(heart):
             heart_count+=1
     return heart_count
@@ -111,7 +114,7 @@ def get_num_animals(this_hearts, this_animal):
     all_hearts = this_hearts[0].find_all('i')
     num_animals = len(all_hearts)
     num_redhearts = get_num_redhearts(all_hearts)
-    this_animal = str(this_animal).replace('2', "")
+    this_animal = str(this_animal).replace('h2', "")
     if '2' in str(this_animal) and len(all_hearts) < 2:
         num_animals = 2
     elif '3' in str(this_animal) and len(all_hearts) < 3:
@@ -193,7 +196,7 @@ async def obtain_current_sheets():
     items = stuff.get('files')
     sheet_names = []
     for n in items: sheet_names.append(n["name"])
-    print(sheet_names)
+    # print(sheet_names)
     return sheet_names
 
 
@@ -213,7 +216,7 @@ async def selenium_login(URL):
     # URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
     # URL = "https://hxllmth.jcink.net/index.php?showtopic=1417" # boo's farm
     browser.get(URL)
-    time.sleep(2)
+    time.sleep(5)
     html = browser.page_source
     soup = BeautifulSoup(html, features="lxml")
     results = soup.find(id="sascon")
@@ -230,6 +233,11 @@ async def check_valid_URL(url):
         all_animal_html = vals[0].find_all("div", class_="ranching")
         if len(all_crop_html) or len(all_animal_html) > 0:
             return True
+
+
+
+
+
 
 async def register_new(ctx, *args):
     global bot
@@ -250,10 +258,10 @@ async def register_new(ctx, *args):
             return 'hxllmth.jcink.net' in m.content and m.channel == channel and m.author == ctx.author
 
         msg = await bot.wait_for("message", check=check)
-        await ctx.send("One moment, checking URL validity...")
+        await ctx.send(VALID_STR)
         if await check_valid_URL(msg.content) == True:
-            user_json["user_sheets"][this_usr.id] = sheet_name
-            user_json["user_farmlinks"][this_usr.id] = msg.content
+            user_json["user_sheets"][str(this_usr.id)] = sheet_name
+            user_json["user_farmlinks"][str(this_usr.id)] = msg.content
             print(user_json)
             sheet = client.open(sheet_name).sheet1
             job_elements = await selenium_login(msg.content)
@@ -269,12 +277,87 @@ async def register_new(ctx, *args):
         "{}, please make sure you correctly shared your spreadsheet titled **{}** with the following email address: \n `autofarming@autofarming.iam.gserviceaccount.com`."
         .format(this_usr.mention, sheet_name))
 
+
+async def sync_sheet(ctx, *args):
+    global bot
+    global client
+    this_usr = ctx.message.author
+    user_json = json.load(open(JSON_NAME))
+    if str(this_usr.id) not in user_json["user_sheets"]:
+        await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+    else:
+        await ctx.send(f"Please wait a moment for the web scraper to fetch your farm.")
+        sheet_name = user_json["user_sheets"][str(this_usr.id)]
+        url = user_json["user_farmlinks"][str(this_usr.id)]
+        sheet = client.open(sheet_name).sheet1
+        job_elements = await selenium_login(url)
+        await handle_all_animals(job_elements[0], sheet)
+        await ctx.send(f"{this_usr.nick}, your spreadsheet has been successfully updated from your most current farm post!")
+
+
 async def show_farm(ctx, *args):
-    print()
+    global bot
+    global client
+    this_usr = ctx.message.author
+    user_json = json.load(open(JSON_NAME))
+    if str(ctx.message.author.id) not in user_json["user_sheets"]:
+        await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+    elif len(args) < 1:
+        sheet = client.open(user_json["user_sheets"][str(this_usr.id)]).sheet1
+        ani_names = sheet.col_values(1)
+        num_anis = sheet.col_values(2)
+        prod_names = sheet.col_values(4)
+        perweek_vals = sheet.col_values(5)
+        print(len(ani_names), len(num_anis), len(prod_names), len(perweek_vals))
+        embed=discord.Embed(title=user_json["user_sheets"][str(this_usr.id)],
+            url=user_json["user_farmlinks"][str(this_usr.id)])
+        embed.set_thumbnail(url=this_usr.avatar_url)
+        embed.set_author(name=f"{this_usr.nick}'s weekly farm produce")
+        for i in range(1, len(num_anis)): # skip title row
+            if int(num_anis[i]) > 0 and ani_names[i] != "pig":
+                embed.add_field(name=f"{prod_names[i]} from {num_anis[i]} {ani_names[i]}", value=str(perweek_vals[i]), inline=True)
+        # embed.add_field(name=Leather, value=5, inline=True)
+        # embed.add_field(name=Tet, value=3, inline=True)
+        # embed.add_field(name=undefined, value=undefined, inline=True)
+        # embed.add_field(name=shep, value=4, inline=True)
+        await ctx.send(embed=embed)
 
 async def edit_info(ctx, *args):
     global bot
-    this_usr = ctx.message.author
-    if str(this_usr.id) not in 
-
-    print()
+    if len(args) < 1:
+        await ctx.send(f"The usage for this command is:\n`f!edit sheet` - to edit name of google spreadsheet \n`f!edit farm` - to change farm link")
+    else:
+        user_json = json.load(open(JSON_NAME))
+        this_usr = ctx.message.author
+        if str(this_usr.id) not in user_json["user_sheets"]:
+            await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+        elif args[0].lower() == 'farm':
+            await ctx.send("Please copy and paste your new farm URL now.")
+            def check(m):
+                return 'hxllmth.jcink.net' in m.content and m.channel == channel and m.author == ctx.author
+            msg = await bot.wait_for("message", check=check)
+            await ctx.send(VALID_STR)
+            if await check_valid_URL(msg.content) == True:
+                user_json["user_farmlinks"][str(this_usr.id)] = msg.content
+                with open(JSON_NAME, 'w', encoding='utf-8') as f:
+                    json.dump(user_json, f, ensure_ascii=False, indent=4)
+                await ctx.send(f"Your farm link has been updated to `{msg.content}`!")
+            else:
+                await ctx.send(f"This is not a valid farm link. Try again.")
+        elif args[0].lower() == 'sheet':
+            await ctx.send("Please copy and paste your new spreadsheet's name now.")
+            def check(m):
+                return m.channel == channel and m.author == ctx.author
+            msg = await bot.wait_for("message", check=check)
+            current_sheets = await obtain_current_sheets() # get sheets shared with google bot
+            if msg.content in current_sheets and msg.content not in user_json["user_sheets"][str(this_usr.id)]:
+                old_sheet = user_json["user_sheets"][str(this_usr.id)]
+                user_json["user_sheets"][str(this_usr.id)] = msg.content
+                with open(JSON_NAME, 'w', encoding='utf-8') as f:
+                    json.dump(user_json, f, ensure_ascii=False, indent=4)
+                await ctx.send(f"Your sheet's name has been changed from `{old_sheet}` to `{msg.content}`!")
+            else:
+                await ctx.send(
+                    f"Your sheet name was not found as " + 
+                    "shared by the the google client. Please make sure you've shared it" + 
+                    " with `autofarming@autofarming.iam.gserviceaccount.com`.")
