@@ -9,6 +9,7 @@ import numpy as np
 # import farmbot #import discord bot companion functionality
 import botfuncs
 import time
+import discord
 
 RESULT_STRING = []
 
@@ -30,7 +31,7 @@ AnimalToMat = {"sheep": "Common Thread",
                 "snake":"Uncommon Leather",
                 "crocodile":"Rare Leather",
                 "orange cat":"Common Fish",
-                "black cat":"Common Bugs",
+                "black cat":"Common Bug",
                 "raccoon":"random",
                 "bee house":"Honeycomb" }
 MatToMath = {"Common Thread":0,
@@ -56,6 +57,12 @@ raccoonMatching = {
     7:"Common Bug",
     8:"Common Thread"}
 
+penguinMatching = {
+    1:"Common Ore",
+    2:"Uncommon Ore",
+    3:"Rare Ore"
+}
+
 cropMatching = {
     "apple":"Common Fruit",
     "grape":"Uncommon Fruit",
@@ -77,15 +84,7 @@ rarityCropYield = {
     "Rare":5,
     "Epic":3}
 
-tool_list = ["wooden fishing rod", "silver fishing rod", "golden fishing rod", "wooden bug net",
-"silver bug net", "golden bug net"]
-toolYield = {
-    tool_list[0]: "Common Fish",
-    tool_list[1]: "Uncommon Fish",
-    tool_list[2]: "Rare Fish",
-    tool_list[3]: "Common Bug",
-    tool_list[4]: "Uncommon Bug",
-    tool_list[5]: "Rare Bug"}
+do_not_auto_add = ["pig", "raccoon", "jackalope","penguin"]
 
 
 async def handle_all_crops(farm_html, sheet):
@@ -93,7 +92,8 @@ async def handle_all_crops(farm_html, sheet):
     total_locs = sheet.col_values(6)
     product_locs = sheet.col_values(4)
     is_cloak = 0
-    total_locs = handle_misc(farm_html, total_locs, product_locs)
+    total_locs, strings_to_add = botfuncs.handle_misc(farm_html, total_locs, product_locs)
+    for string in strings_to_add: RESULT_STRING.append(string)
     if "harvest cloak" in str(farm_html).lower():
         print("WE HAVE A CLOAAAKKKK")
         is_cloak = 1
@@ -113,25 +113,10 @@ async def handle_all_crops(farm_html, sheet):
     total_locs = np.reshape(total_locs, (len(total_locs), 1))
     sheet.update('F:F', total_locs.tolist())
 
-def handle_misc(farm_html, total_locs, product_locs):
-    RESULT_STRING.append("Rolling rods and nets: \n")
-    count = 0
-    for item in tool_list:
-        if item in str(farm_html).lower():
-            count += 1
-            this_roll = random.randint(1, 10)
-            prod_index = product_locs.index(toolYield[item]) # index of product we're adding to
-            total_locs[prod_index] = int(total_locs[prod_index]) + this_roll
-            RESULT_STRING.append(item+", "+toolYield[item]+
-            ":\n**"+str(this_roll)+"**. You now have "+str(total_locs[prod_index]))
-    if count == 0:
-        RESULT_STRING.append("You have no rods or nets.\n")
-    return total_locs
-
 async def roll_crop(product_name, crop_name, crop_count, is_cloak, total):
     rarity = product_name.split(" ")[0]
     max_range = rarityCropYield[rarity]
-    result_str = "Rolling " + str(crop_count) + " " + crop_name 
+    result_str = "\n\n\n\nRolling " + str(crop_count) + " " + crop_name 
     if is_cloak == 1:
         result_str += " + " + str(crop_count)
     result_str += ":\n"
@@ -163,12 +148,35 @@ def get_crop_count(this_crop):
             num.append(s)
     return int("".join(num))
 
+async def get_penguin(sheet):
+    locs = sheet.col_values(1)
+    penguin_row = locs.index("penguin")+1
+    num_penroll = int(sheet.cell(penguin_row, 2).value) + int(sheet.cell(penguin_row, 3).value) #num animal +
+    if num_penroll == 0:
+        RESULT_STRING.append("You have no penguins. Sadder than not having raccoons.")
+    else:
+        mat_names = sheet.col_values(4)
+        curr_total = sheet.col_values(6)
+        curr_total = np.reshape(curr_total, (len(curr_total), 1))
+        result_str = "\n\n\n\n**PENGUINS**\n"
+        for i in range(num_penroll):
+            result = random.randint(1, 3)
+            chosen_mat = penguinMatching[result]
+            mat_index = mat_names.index(chosen_mat)
+            # print("BEFORE", chosen_mat, curr_total[mat_index], type(curr_total[mat_index]))
+            curr_total[mat_index] = [(int(curr_total[mat_index])+2)]
+            print("PINGIN", i, chosen_mat, curr_total[mat_index])
+            result_str += "Penguin " + str(i+1) + " yield is " + str(result) + "/3: 2 " + chosen_mat + " -> " + str(curr_total[mat_index][0]) + "\n"
+            # await botfuncs.edit_msg_content(result_str)
+        RESULT_STRING.append(result_str) # add to discord output
+        # await botfuncs.triggerTrue(True) #permit bot to go
+        sheet.update('F:F', curr_total.tolist())
 
 
 async def get_raccoon(sheet):
     locs = sheet.col_values(1) # get all animal names
     raccoon_row = locs.index("raccoon")+1
-    num_racroll = int(sheet.cell(raccoon_row, 2).value) + int(sheet.cell(raccoon_row, 3).value) #num animal +
+    num_racroll = int(sheet.cell(raccoon_row, 2).value) + int(sheet.cell(raccoon_row, 3).value) #num animal + num animals with red hearts
     # print("RICKROLLS", num_racroll)
     if num_racroll == 0:
         RESULT_STRING.append("You have no raccoons. Sad.")
@@ -176,7 +184,7 @@ async def get_raccoon(sheet):
         mat_names = sheet.col_values(4)
         curr_total = sheet.col_values(6)
         curr_total = np.reshape(curr_total, (len(curr_total), 1))
-        result_str = ""
+        result_str = "\n\n\n\n**RACCOONS\n**"
         for i in range(num_racroll):
             result = random.randint(1, 8)
             chosen_mat = raccoonMatching[result]
@@ -192,7 +200,7 @@ async def get_raccoon(sheet):
             elif i+1 == 3:
                 num_place = "rd"
             else: num_place = "th"
-            result_str += "User, your " + str(i+1)+num_place+ " raccoon yield is " + str(result) + "/8: " + chosen_mat + ". You now have " + str(curr_total[mat_index][0]) + "\n"
+            result_str += "Raccoon " +str(i+1)+" yield is " + str(result) + "/8: " + chosen_mat + " -> " + str(curr_total[mat_index][0]) + "\n"
             # await botfuncs.edit_msg_content(result_str)
         RESULT_STRING.append(result_str) # add to discord output
         # await botfuncs.triggerTrue(True) #permit bot to go
@@ -206,42 +214,77 @@ async def display_to_discord():
     # await botfuncs.edit_msg_content(RESULT_STRING)
     # await botfuncs.triggerTrue(True)
 
-async def increment_total(sheet):
+async def increment_total(sheet, ctx, URL):
     week_locs = sheet.col_values(5) #GETS PER WEEK COLUMN VALUES
     total_locs = sheet.col_values(6) # GET RUNNING TOTAL SO FAR
     aniname_locs = sheet.col_values(1)
     prodname_locs = sheet.col_values(4)
+    unc_jewel = None
+    unc_ingot = None
     print(len(aniname_locs), aniname_locs)
     # newcol =  np.full(len(week_locs), '0', dtype=object); newcol[0] = tp[0]
     for i in range(1, len(week_locs)):
         # if i < len(aniname_locs):
         # print(aniname_locs[i], week_locs[i])
-        if aniname_locs[i] == "raccoon" or aniname_locs[i] == "pig":
+        if aniname_locs[i] == "jackalope":
+            unc_jewel = prodname_locs.index("Uncommon Jewel")
+            unc_ingot = prodname_locs.index("Uncommon Ingot")
+            print("NUMBER OF JACKALOPES:", week_locs[i])
+            total_locs[unc_jewel] = int(int(week_locs[i])/2+int(total_locs[unc_jewel]))
+            total_locs[unc_ingot] = int(int(week_locs[i])/2+int(total_locs[unc_ingot]))
+            total_locs[i] = "NA"
+        elif (aniname_locs[i] == "raccoon" or aniname_locs[i] == "pig" 
+        or aniname_locs[i] == "penguin"):
             total_locs[i] = "NA"
         else:
-            total_locs[i] = (int(week_locs[i])+int(total_locs[i]))
+            total_locs[i] = int(int(week_locs[i])+int(total_locs[i]))
             # print(aniname_locs[i], week_locs[i], int(week_locs[i])+int(total_locs[i]))
     total_locs = np.reshape(total_locs, (len(total_locs), 1))
     sheet.update('F:F', total_locs.tolist())
     # UPDATE STRING 
-    result_str = "This week, your animals have produced the following: \n"
-    # print(aniname_locs)
-    # while '' in aniname_locs:
-    #     aniname_locs.remove('')
-    # while ' ' in aniname_locs:
-    #     aniname_locs.remove(' ')
+
+    embed=discord.Embed(title=f"{ctx.message.author.nick}'s farm", url=URL, color=0x3eb300)
+    embed.set_author(name="THIS WEEK'S ANIMAL PRODUCE")
+
+    # RESULT_STRING.append("\nThis week, your animals have produced the following: ")
+
+    # result_str = "This week, your animals have produced the following: \n"
+
     aniname_locs.pop(0) # REMOVE COLUMN TITLE, 'ANIMAL NAME'
-    # print(aniname_locs)
     for ani in aniname_locs:
-        if ani in AnimalToMat and ani != "pig" and ani != "raccoon":
+        if ani in AnimalToMat and ani not in do_not_auto_add:
             index = prodname_locs.index(AnimalToMat[ani])
-            # index = week_locs.index(mat)
             week_val = week_locs[index]
             total_val = total_locs[index]
             if int(week_val) > 0: # if no animals are producing this week, ignore
-                result_str+= (ani + " - " + AnimalToMat[ani] + " - **" + str(week_val)  
-                + "** totaling **" + str(total_val[0]) + "** \n")
+
+                embed.add_field(name=(ani), value=(AnimalToMat[ani] + " - " + str(week_val)  
+                + " -> \n" + str(total_val[0])), inline=True)
+
+                # RESULT_STRING.append(ani + " - " + AnimalToMat[ani] + " - **" + str(week_val)  
+                # + "** -> **" + str(total_val[0]) + "** \n")
+
+                # result_str+= (ani + " - " + AnimalToMat[ani] + " - **" + str(week_val)  
+                # + "** -> **" + str(total_val[0]) + "** \n")
+
+        elif ani == "jackalope":
+            temp_locs = sheet.col_values(6) # GET RUNNING TOTAL SO FAR
+            val = int(int(week_val)/2)
+            # print(unc_ingot, unc_jewel)
+            # print(total_locs[unc_jewel], "STUFF", temp_locs[unc_ingot])
+
+            embed.add_field(name=ani, value=("Unc. Ingot - " + str(val) + " -> " +
+            str(temp_locs[unc_ingot]) + "\nUnc. Jewel - " + str(val) + " -> " + 
+            str(temp_locs[unc_jewel])), inline=True)
+
+            # RESULT_STRING.append(f"{ani} - **{str(val)}** Uncommon Ingot, **{str(val)} Uncommon Jewel, totaling {str(total_locs[unc_ingot][0])} and {temp_locs[unc_jewel][0]}")
+            
+            # result_str += f"{ani} - **{str(val)}** Uncommon Ingot, **{str(val)} Uncommon Jewel, totaling {str(total_locs[unc_ingot])} and {total_locs[unc_jewel]}"
+    
     await get_raccoon(sheet)
-    RESULT_STRING.append(result_str)
+    await get_penguin(sheet)
+    # botfuncs.print_embed(result_str)
+    # RESULT_STRING.append(result_str)
     await display_to_discord()
+    await ctx.send(embed=embed)
 

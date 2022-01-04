@@ -28,19 +28,15 @@ async def get_info(farm_html, sheet):
 
 
 
-async def run_main(sheet_name):
-    URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" #ice's farm
+async def run_main(sheet_name, URL, ctx):
+    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" #ice's farm
     job_elements = await botfuncs.selenium_login(URL)
     client = await botfuncs.get_client()
     #Fetch the sheet
     sheet = client.open(sheet_name).sheet1
     python_sheet = sheet.get_all_records()
     # post_count = python_sheet[0]['POSTS']
-    # print(post_count)
-
-    # if post_count < len(job_elements)-1: # if the value sitting in our sheet is smaller than the actual num posts made,
     await get_info(job_elements[0], sheet)
-    # if datetime.today().weekday() == 6: # IF THE DAY IS SUNDAY
-    await farmfunctions.increment_total(sheet)
+    await farmfunctions.increment_total(sheet, ctx, URL)
     # pp = pprint.PrettyPrinter()
     # pp.pprint(python_sheet) # prints google spreadsheet

@@ -3,11 +3,13 @@ from dotenv import load_dotenv
 from discord.ext import commands
 from discord.ext import tasks
 import json
+import random
 from apiclient import discovery
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 import numpy as np
+import autofarmer
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -32,6 +34,20 @@ channel = None
 creds = None
 bot = None
 client = None
+
+tool_list = ["wooden fishing rod", "silver fishing rod", "golden fishing rod", "wooden bug net",
+"silver bug net", "golden bug net"]
+toolYield = {
+    tool_list[0]: "Common Fish",
+    tool_list[1]: "Uncommon Fish",
+    tool_list[2]: "Rare Fish",
+    tool_list[3]: "Common Bug",
+    tool_list[4]: "Uncommon Bug",
+    tool_list[5]: "Rare Bug"}
+
+
+# - - - - - - - - - - - - - - - - - - - -
+
 
 async def get_client():
     return client
@@ -105,7 +121,6 @@ def strip_animal(this_animal):
 def get_num_redhearts(all_hearts):
     heart_count = 0
     for heart in all_hearts:
-        print(heart)
         if 'red' in str(heart) or  'rgb(255, 0, 0)' in str(heart):
             heart_count+=1
     return heart_count
@@ -119,12 +134,15 @@ def get_num_animals(this_hearts, this_animal):
         num_animals = 2
     elif '3' in str(this_animal) and len(all_hearts) < 3:
         num_animals = 3
-    # print("num animals: ", len(all_hearts), "num red: ", num_redhearts)
+    # print(this_animal, "num animals: ", len(all_hearts), "num red: ", num_redhearts)
+    # if this_animal
     return num_animals, num_redhearts
 
-def get_per_week(num_animals, num_redhearts):
+def get_per_week(num_animals, num_redhearts, locs):
     per_week = [] #array to hold each animal set's total output per week (assuming 3 posts week)
     for i in range(len(num_animals)):
+        if locs[i] == "jackalope":
+            num_redhearts[i] = num_redhearts[i]*2
         per_week.append(((num_animals[i]*2) + num_redhearts[i])*3)
     return per_week
 
@@ -142,7 +160,7 @@ def sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet):
     new_perweek = np.full(len(perweek_col), '0', dtype=object); new_perweek[0] = perweek_col[0]
     new_perweek = np.reshape(new_perweek, (len(new_perweek), 1))
     perweek_col = np.reshape(perweek_col, (len(perweek_col), 1))
-    per_week = get_per_week(num_animals, num_redhearts)
+    per_week = get_per_week(num_animals, num_redhearts, locs)
     for i in range(len(animal_names)):
                 # sheet.find(animal_names[i])
         if animal_names[i] == "bees" or animal_names[i] == "bee":
@@ -176,15 +194,49 @@ async def handle_all_animals(farm_html, sheet):
         this_animal = aminal.find_all('h2')
         # print(this_animal)
         pretty_animal = strip_animal(this_animal[0])
+        if pretty_animal == "orange": pretty_animal = "orange cat"
+        elif pretty_animal == "black": pretty_animal = "black cat"
         num_animal, num_hearts = get_num_animals(this_hearts, this_animal[0])
         # print("Animal:", pretty_animal, " no:", num_animal, " no. w/ red hearts:", num_hearts)
         animal_names.append(pretty_animal); num_animals.append(num_animal); num_redhearts.append(num_hearts)
     sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet)  
     return animal_names
 
+
+
+
+
+
 ############################################################################
 ########################################################################### END ANIMAL FUNCTIONS
+# MISC (TOOLS)
+def handle_misc(farm_html, total_locs, product_locs):
+    RESULT_STRING = []
+    RESULT_STRING.append("Rolling rods and nets: \n")
+    count = 0
+    for item in tool_list:
+        if item in str(farm_html).lower():
+            count += 1
+            this_roll = random.randint(1, 10)
+            prod_index = product_locs.index(toolYield[item]) # index of product we're adding to
+            total_locs[prod_index] = int(total_locs[prod_index]) + this_roll
+            RESULT_STRING.append(item+", "+toolYield[item]+
+            ": **"+str(this_roll)+"**. You now have "+str(total_locs[prod_index]))
+    if count == 0:
+        RESULT_STRING.append("You have no rods or nets.\n")
+    return total_locs, RESULT_STRING
 
+def get_tools(farm_html):
+    str_of_tools = "**You have the following:** \n"
+    for i in range(len(tool_list)):
+        if tool_list[i] in str(farm_html).lower():
+            str_of_tools += tool_list[i]
+            if i < len(tool_list)-1:
+                str_of_tools+= ", "
+    return str_of_tools
+
+def get_crops():
+    print()
 
 
 # GET ALL SPREADSHEETS SHARED WITH GOOGLE ACCOUNT
@@ -361,3 +413,48 @@ async def edit_info(ctx, *args):
                     f"Your sheet name was not found as " + 
                     "shared by the the google client. Please make sure you've shared it" + 
                     " with `autofarming@autofarming.iam.gserviceaccount.com`.")
+
+async def roll_items(ctx, *args):
+    global bot
+    global client
+    if len(args) < 1:
+        await ctx.send(f"The usage for this command is:\n`f!roll weekly` - roll weekly farm yield \n`f!roll tools` - roll nets and rods after thread completion")
+    else:
+        user_json = json.load(open(JSON_NAME))
+        this_usr = ctx.message.author
+        if str(this_usr.id) not in user_json["user_sheets"]:
+            await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+        elif args[0].lower() == 'tools':
+            await ctx.send("Fetching the tools from your farm page...")
+            farm_html = await selenium_login(user_json["user_farmlinks"][str(this_usr.id)])
+            sheet = client.open(user_json["user_sheets"][str(this_usr.id)]).sheet1
+            tool_list = get_tools(farm_html)
+            await ctx.send(tool_list + f"\n {this_usr.nick}, to roll for these, type `yes` or `y`:")
+            def check(m):
+                return m.channel == channel and m.author == ctx.author
+            msg = await bot.wait_for("message", check=check)
+            if msg.content.lower() == "yes" or msg.content.lower() == "y":
+                prod_names = sheet.col_values(4)
+                total_vals = sheet.col_values(6)
+                total_locs, result_string = handle_misc(farm_html, total_vals, prod_names)
+                total_locs = np.reshape(total_locs, (len(total_locs), 1))
+                sheet.update('F:F', total_locs.tolist())
+                for result in result_string:
+                    await ctx.send(result)
+                # await ctx.send(result_string)
+            else:
+                await ctx.send("Cancelling roll.")
+        elif args[0].lower() == 'weekly':
+            this_sheet = user_json["user_sheets"][str(this_usr.id)]
+            await ctx.send(
+            f"{this_usr.mention}, this will increment all of your animal produce" +
+            f" and execute all crop, tool, and special animal rolls, and" + 
+            f" automatically append them to your sheet: \n **{this_sheet}**\n" + 
+            f"Are you sure you want to roll? Type `yes`/`y` or `no`/`n`")
+            def check(m):
+                return m.channel == channel and m.author == ctx.author
+            msg = await bot.wait_for("message", check=check)
+            if msg.content.lower() == "yes" or msg.content.lower() == "y":
+                await ctx.send(f"Rolling for {this_usr.nick} now...")
+                await autofarmer.run_main(this_sheet, user_json["user_farmlinks"][str(this_usr.id)], ctx)
+            

@@ -13,6 +13,7 @@ import json
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 bot = commands.Bot(command_prefix='f!')
+bot.remove_command("help")
 # channel = None
 
 # client = discord.Client()
@@ -46,6 +47,10 @@ async def check_for_rolling(channel):
 
 
 @bot.command()
+async def help(ctx, *args):
+    print()
+
+@bot.command()
 async def register(ctx, *args):
     global bot
     #  await ctx.send('{} arguments: {}'.format(len(args), ', '.join(args)))
@@ -53,17 +58,9 @@ async def register(ctx, *args):
 
 
 @bot.command()
-async def roll(ctx, arg1):
+async def roll(ctx, *args):
     global bot
-    arg1 = arg1.lower()
-    if arg1  == 'off':
-        await ctx.send(f"ok auto rolls off")
-    elif arg1 == 'on':
-        await ctx.send(f"ok on")
-    elif arg1 == 'weekly':
-        await ctx.send(f"aight bet lemme get ur stuff")
-    else:
-        await ctx.send(f"bitch idk what u sayin")
+    await botfuncs.roll_items(ctx, *args)
 
 @bot.command()
 async def edit(ctx, *args):
