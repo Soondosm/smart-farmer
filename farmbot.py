@@ -48,7 +48,14 @@ async def check_for_rolling(channel):
 
 @bot.command()
 async def help(ctx, *args):
-    print()
+    embed=discord.Embed(title="LINK TO SPREADSHEET TEMPLATE", url="https://docs.google.com/spreadsheets/d/1TsedJaIPr19z-50NDVa79h4UDIJEZgGFkoHCmjg1GKo/edit#gid=0", description="To get started: \n**1.** Follow the link above to the spreadsheet template. \n**2.** Go to File -> Make a Copy. \n**3.** Name your new spreadsheet something unique. \n**4.** Share this spreadsheet with the following email address: `autofarming@autofarming.iam.gserviceaccount.com` \n**5.** Type f!register [YOUR SPREADSHEETNAME]. Have your farm's URL ready, because you will be asked to provide it. \nThen you are good to go!", color=0x3eb300)
+    embed.add_field(name="f!register (my spreadsheet name)", value="register a new farm. Your spreassheet name is case sensitive. Have your farm's URL ready, as you will be asked to enter it to complete registration. If everything was done correctly, you should see your spreadsheet populate with your farm's data.", inline=False)
+    embed.add_field(name="f!show", value="get the animals currently in your farm, as well as their weekly produce.", inline=False)
+    embed.add_field(name="f!edit [farm OR sheet]", value="change either your farm link or the name of your spreadsheet, respectively.", inline=False)
+    embed.add_field(name="f!sync", value="If you bought an animal in the middle of the week and want to see what it will give you on Sunday, use this command to sync your farm post with your spreadsheet.", inline=False)
+    embed.add_field(name="f!roll [tools OR weekly]", value="tools: roll fishing rods and bug nets to collect the rewards they provide upon finishing threads in places appropriate for them. \n weekly: your weekly farm roll. Execute this command to roll crops, randomized animals, nets and rods, and increment all animal producers. Then add all of these yields to your spreadsheet and report new total.", inline=False)
+    embed.set_footer(text="Questions? Encountering bugs? Ping or dm Flip in the server!")
+    await ctx.send(embed=embed)
 
 @bot.command()
 async def register(ctx, *args):

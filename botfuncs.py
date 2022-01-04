@@ -19,6 +19,16 @@ import gspread
 # from gspread.models import Cell
 from oauth2client.service_account import ServiceAccountCredentials
 
+
+# https://hxllmth.jcink.net/index.php?showtopic=1121 # ICEGUIN'S FARM
+#  https://hxllmth.jcink.net/index.php?showtopic=1128 #RELU'S FARM
+# https://hxllmth.jcink.net/index.php?showtopic=1409 #inferior's farm
+# https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051 # my farm
+# https://hxllmth.jcink.net/index.php?showtopic=1417 # boo's farm
+
+
+
+
 JSON_NAME = 'users.json'
 VALID_STR = "One moment, checking URL validity..."
 YOUDONTHAVEAFARM = ", you do not have a registered farm. Please register with: ```f!register MY GOOGLE SPREADSHEET NAME```"
@@ -262,11 +272,6 @@ async def selenium_login(URL):
     password.send_keys(passwordStr)
     logmein = browser.find_element_by_xpath("//input[@type='submit']")
     logmein.click()
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" # ICEGUIN'S FARM
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1128" #RELU'S FARM
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1409" #inferior's farm
-    # URL = "https://hxllmth.jcink.net/index.php?act=ST&f=25&t=1421&st=0#entry7051" # my farm
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1417" # boo's farm
     browser.get(URL)
     time.sleep(5)
     html = browser.page_source

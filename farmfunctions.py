@@ -11,7 +11,7 @@ import botfuncs
 import time
 import discord
 
-RESULT_STRING = []
+# RESULT_STRING = []
 
 AnimalToMat = {"sheep": "Common Thread", 
                 "fox": "Uncommon Thread",
@@ -88,6 +88,7 @@ do_not_auto_add = ["pig", "raccoon", "jackalope","penguin"]
 
 
 async def handle_all_crops(farm_html, sheet):
+    RESULT_STRING = []
     all_crop_html = farm_html.find_all("div", class_="farming")
     total_locs = sheet.col_values(6)
     product_locs = sheet.col_values(4)
@@ -109,11 +110,12 @@ async def handle_all_crops(farm_html, sheet):
         product_name = cropMatching[crop_name]
         prod_index = product_locs.index(product_name)
         print(product_name, prod_index)
-        total_locs[prod_index] = await roll_crop(product_name, crop_name, crop_count, is_cloak, total_locs[prod_index])
+        total_locs[prod_index], RESULT_STRING = await roll_crop(product_name, crop_name, crop_count, is_cloak, total_locs[prod_index], RESULT_STRING)
     total_locs = np.reshape(total_locs, (len(total_locs), 1))
     sheet.update('F:F', total_locs.tolist())
+    return RESULT_STRING
 
-async def roll_crop(product_name, crop_name, crop_count, is_cloak, total):
+async def roll_crop(product_name, crop_name, crop_count, is_cloak, total, RESULT_STRING):
     rarity = product_name.split(" ")[0]
     max_range = rarityCropYield[rarity]
     result_str = "\n\n\n\nRolling " + str(crop_count) + " " + crop_name 
@@ -132,7 +134,7 @@ async def roll_crop(product_name, crop_name, crop_count, is_cloak, total):
     RESULT_STRING.append(result_str)
     # await botfuncs.edit_msg_content(result_str)
     # await botfuncs.triggerTrue(True) #permit bot to go
-    return new_total
+    return new_total, RESULT_STRING
 
 
 
@@ -148,13 +150,14 @@ def get_crop_count(this_crop):
             num.append(s)
     return int("".join(num))
 
-async def get_penguin(sheet):
+async def get_penguin(sheet, RESULT_STRING):
     locs = sheet.col_values(1)
     penguin_row = locs.index("penguin")+1
     num_penroll = int(sheet.cell(penguin_row, 2).value) + int(sheet.cell(penguin_row, 3).value) #num animal +
     if num_penroll == 0:
         RESULT_STRING.append("You have no penguins. Sadder than not having raccoons.")
     else:
+        num_penroll = num_penroll * 3
         mat_names = sheet.col_values(4)
         curr_total = sheet.col_values(6)
         curr_total = np.reshape(curr_total, (len(curr_total), 1))
@@ -171,9 +174,10 @@ async def get_penguin(sheet):
         RESULT_STRING.append(result_str) # add to discord output
         # await botfuncs.triggerTrue(True) #permit bot to go
         sheet.update('F:F', curr_total.tolist())
+    return RESULT_STRING
 
 
-async def get_raccoon(sheet):
+async def get_raccoon(sheet, RESULT_STRING):
     locs = sheet.col_values(1) # get all animal names
     raccoon_row = locs.index("raccoon")+1
     num_racroll = int(sheet.cell(raccoon_row, 2).value) + int(sheet.cell(raccoon_row, 3).value) #num animal + num animals with red hearts
@@ -181,6 +185,7 @@ async def get_raccoon(sheet):
     if num_racroll == 0:
         RESULT_STRING.append("You have no raccoons. Sad.")
     else:
+        num_racroll = num_racroll * 3 #accounting for 3 posts
         mat_names = sheet.col_values(4)
         curr_total = sheet.col_values(6)
         curr_total = np.reshape(curr_total, (len(curr_total), 1))
@@ -205,16 +210,18 @@ async def get_raccoon(sheet):
         RESULT_STRING.append(result_str) # add to discord output
         # await botfuncs.triggerTrue(True) #permit bot to go
         sheet.update('F:F', curr_total.tolist())
+    return RESULT_STRING
 
 
-async def display_to_discord():
+async def display_to_discord(RESULT_STRING):
     # print(len(RESULT_STRING), RESULT_STRING)
     for str in RESULT_STRING:
        await botfuncs.print_to_channel(str)
+    RESULT_STRING = [] # reset
     # await botfuncs.edit_msg_content(RESULT_STRING)
     # await botfuncs.triggerTrue(True)
 
-async def increment_total(sheet, ctx, URL):
+async def increment_total(sheet, ctx, URL, RESULT_STRING):
     week_locs = sheet.col_values(5) #GETS PER WEEK COLUMN VALUES
     total_locs = sheet.col_values(6) # GET RUNNING TOTAL SO FAR
     aniname_locs = sheet.col_values(1)
@@ -281,10 +288,10 @@ async def increment_total(sheet, ctx, URL):
             
             # result_str += f"{ani} - **{str(val)}** Uncommon Ingot, **{str(val)} Uncommon Jewel, totaling {str(total_locs[unc_ingot])} and {total_locs[unc_jewel]}"
     
-    await get_raccoon(sheet)
-    await get_penguin(sheet)
+    RESULT_STRING = await get_raccoon(sheet, RESULT_STRING)
+    RESULT_STRING = await get_penguin(sheet, RESULT_STRING)
     # botfuncs.print_embed(result_str)
     # RESULT_STRING.append(result_str)
-    await display_to_discord()
+    await display_to_discord(RESULT_STRING)
     await ctx.send(embed=embed)
 

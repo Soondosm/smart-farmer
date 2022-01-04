@@ -24,7 +24,8 @@ passwordStr = hxlogin['password']
 
 async def get_info(farm_html, sheet):
     await botfuncs.handle_all_animals(farm_html, sheet)
-    await farmfunctions.handle_all_crops(farm_html, sheet)
+    RESULT_STRING = await farmfunctions.handle_all_crops(farm_html, sheet)
+    return RESULT_STRING
 
 
 
@@ -36,7 +37,7 @@ async def run_main(sheet_name, URL, ctx):
     sheet = client.open(sheet_name).sheet1
     python_sheet = sheet.get_all_records()
     # post_count = python_sheet[0]['POSTS']
-    await get_info(job_elements[0], sheet)
-    await farmfunctions.increment_total(sheet, ctx, URL)
+    RESULT_STRING = await get_info(job_elements[0], sheet)
+    await farmfunctions.increment_total(sheet, ctx, URL, RESULT_STRING)
     # pp = pprint.PrettyPrinter()
     # pp.pprint(python_sheet) # prints google spreadsheet
