@@ -10,9 +10,11 @@ import numpy as np
 import botfuncs
 import time
 import discord
+import json
 
 # RESULT_STRING = []
 
+JSON_NAME = 'users.json'
 AnimalToMat = {"sheep": "Common Thread", 
                 "fox": "Uncommon Thread",
                 "silkworm": "Rare Thread",
@@ -250,8 +252,10 @@ async def increment_total(sheet, ctx, URL, RESULT_STRING):
     sheet.update('F:F', total_locs.tolist())
     # UPDATE STRING 
 
-    embed=discord.Embed(title=f"{ctx.message.author.nick}'s farm", url=URL, color=0x3eb300)
-    embed.set_author(name="THIS WEEK'S ANIMAL PRODUCE")
+    user_json = json.load(open(JSON_NAME))
+    sheet_name = user_json["user_sheets"][str(ctx.message.author.id)]
+    embed=discord.Embed(title=f"{sheet_name}", url=URL, color=0x3eb300)
+    embed.set_author(name=f"{ctx.message.author.nick}'s Animal Yield")
 
     # RESULT_STRING.append("\nThis week, your animals have produced the following: ")
 

@@ -222,7 +222,7 @@ async def handle_all_animals(farm_html, sheet):
 # MISC (TOOLS)
 def handle_misc(farm_html, total_locs, product_locs):
     RESULT_STRING = []
-    RESULT_STRING.append("Rolling rods and nets: \n")
+    RESULT_STRING.append("**RODS AND NETS**: \n")
     count = 0
     for item in tool_list:
         if item in str(farm_html).lower():
@@ -306,11 +306,14 @@ async def register_new(ctx, *args):
         print(type(this_usr.id), this_usr.id)
         await ctx.send(
         '{}, you have already registered your farm: **{}**.'.format(this_usr.mention, user_json["user_sheets"][str(this_usr.id)]))
+    elif sheet_name in user_json["user_sheets"]:
+        await ctx.send(
+            f"The spreadsheet name **{sheet_name}** is already being used. Please try another.")
 
     elif this_usr not in user_json["user_sheets"] and sheet_name in current_sheets: # if this user has no farm
         await ctx.send(
         "{}, you are adding the spreadsheet named {}.".format(this_usr.mention, sheet_name))
-        await ctx.send("Please copy and paste your farm's URL now.")
+        await ctx.send("Please copy and paste your farm's **HELLMOUTH** URL now.")
         def check(m):
             return 'hxllmth.jcink.net' in m.content and m.channel == channel and m.author == ctx.author
 
@@ -358,7 +361,7 @@ async def show_farm(ctx, *args):
     this_usr = ctx.message.author
     user_json = json.load(open(JSON_NAME))
     if str(ctx.message.author.id) not in user_json["user_sheets"]:
-        await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+        await ctx.send(f"{this_usr.name}" + YOUDONTHAVEAFARM)
     elif len(args) < 1:
         sheet = client.open(user_json["user_sheets"][str(this_usr.id)]).sheet1
         ani_names = sheet.col_values(1)
@@ -369,15 +372,13 @@ async def show_farm(ctx, *args):
         embed=discord.Embed(title=user_json["user_sheets"][str(this_usr.id)],
             url=user_json["user_farmlinks"][str(this_usr.id)])
         embed.set_thumbnail(url=this_usr.avatar_url)
-        embed.set_author(name=f"{this_usr.nick}'s weekly farm produce")
+        embed.set_author(name=f"{this_usr.name}'s weekly farm produce")
         for i in range(1, len(num_anis)): # skip title row
             if int(num_anis[i]) > 0 and ani_names[i] != "pig":
                 embed.add_field(name=f"{prod_names[i]} from {num_anis[i]} {ani_names[i]}", value=str(perweek_vals[i]), inline=True)
-        # embed.add_field(name=Leather, value=5, inline=True)
-        # embed.add_field(name=Tet, value=3, inline=True)
-        # embed.add_field(name=undefined, value=undefined, inline=True)
-        # embed.add_field(name=shep, value=4, inline=True)
         await ctx.send(embed=embed)
+    elif args[0].lower() == 'crop' or args[0].lower() == 'crops':
+        print()
 
 async def edit_info(ctx, *args):
     global bot
@@ -402,7 +403,7 @@ async def edit_info(ctx, *args):
             else:
                 await ctx.send(f"This is not a valid farm link. Try again.")
         elif args[0].lower() == 'sheet':
-            await ctx.send("Please copy and paste your new spreadsheet's name now.")
+            await ctx.send("Please copy and paste your new spreadsheet's name now. IT IS CASE-SENSITIVE:")
             def check(m):
                 return m.channel == channel and m.author == ctx.author
             msg = await bot.wait_for("message", check=check)
