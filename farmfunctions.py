@@ -4,8 +4,12 @@ import re
 import gspread
 # from gspread.models import Cell
 from oauth2client.service_account import ServiceAccountCredentials
+import nltk
+nltk.download('omw-1.4')
+from nltk.stem import WordNetLemmatizer
 import random
 import numpy as np
+
 # import farmbot #import discord bot companion functionality
 import botfuncs
 import time
@@ -68,7 +72,7 @@ penguinMatching = {
 cropMatching = {
     "apple":"Common Fruit",
     "grape":"Uncommon Fruit",
-    "pumpkins":"Uncommon Fruit",
+    "pumpkin":"Uncommon Fruit",
     "cranberry":"Rare Fruit",
     "beet":"Common Vegetable",
     "bok choy":"Uncommon Vegetable",
@@ -77,7 +81,7 @@ cropMatching = {
     "corn":"Uncommon Grain",
     "amaranth":"Rare Grain",
     "garlic":"Common Herb",
-    "hops":"Uncommon Herb",
+    "hop":"Uncommon Herb",
     "tea leaf":"Rare Herb"}
 
 rarityCropYield = {
@@ -90,6 +94,7 @@ do_not_auto_add = ["pig", "raccoon", "jackalope","penguin"]
 
 
 async def handle_all_crops(farm_html, sheet):
+    wnl = WordNetLemmatizer()
     RESULT_STRING = []
     all_crop_html = farm_html.find_all("div", class_="farming")
     total_locs = sheet.col_values(6)
@@ -100,6 +105,7 @@ async def handle_all_crops(farm_html, sheet):
     if "harvest cloak" in str(farm_html).lower():
         print("WE HAVE A CLOAAAKKKK")
         is_cloak = 1
+    RESULT_STRING.append("\n**CROPS**")
     for crop in all_crop_html:
         crop = crop.find_all('h2')
         crop_name = botfuncs.strip_animal(crop)
@@ -108,8 +114,8 @@ async def handle_all_crops(farm_html, sheet):
         elif crop_name == "bok":
             crop_name += " choy"
         crop_count = get_crop_count(str(crop[0]))
-        # print("found", crop_count, crop_name, "&", is_cloak, "harvest cloak")
-        product_name = cropMatching[crop_name]
+        product_name = cropMatching[wnl.lemmatize(crop_name, 'n')]
+        print("found", crop_count, crop_name, wnl.lemmatize(crop_name, 'n'), "&", is_cloak, "harvest cloak")
         prod_index = product_locs.index(product_name)
         print(product_name, prod_index)
         total_locs[prod_index], RESULT_STRING = await roll_crop(product_name, crop_name, crop_count, is_cloak, total_locs[prod_index], RESULT_STRING)
@@ -120,7 +126,7 @@ async def handle_all_crops(farm_html, sheet):
 async def roll_crop(product_name, crop_name, crop_count, is_cloak, total, RESULT_STRING):
     rarity = product_name.split(" ")[0]
     max_range = rarityCropYield[rarity]
-    result_str = "\n\n\n\nRolling " + str(crop_count) + " " + crop_name 
+    result_str = "\n\nRolling " + str(crop_count) + " " + crop_name 
     if is_cloak == 1:
         result_str += " + " + str(crop_count)
     result_str += ":\n"

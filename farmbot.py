@@ -7,20 +7,56 @@ from discord.ext import tasks
 import autofarmer
 import botfuncs
 import json
-# import farmfunc
+from datetime import datetime
+import aiocron
 
+JSON_NAME = 'users.json'
 # BOT START AND LOOP
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 bot = commands.Bot(command_prefix='f!')
 bot.remove_command("help")
-# channel = None
+FIXED_CHANNEL = None # for reminders
 
 # client = discord.Client()
 
-@tasks.loop(seconds=5)
-async def check_for_rolling(channel):
-    global isActive
+# '* * * * *' every minute
+@aiocron.crontab('0 9 * * 4') # every thursday at 9am
+async def execute_reminder():
+    print()
+    print("Time met")
+    global FIXED_CHANNEL
+    global bot
+    announce_string = "Greetings, Hellmouth Farmers! Today is Thursday EST, so this is your reminder to get your three weekly upkeep posts in before Sunday!\n"
+    user_json = json.load(open(JSON_NAME))
+    for usr, remind_val in user_json["user_remind"].items():
+        if remind_val == "On":
+            print(usr, remind_val)
+            await bot.wait_until_ready()
+            this_usr = await bot.fetch_user(int(usr))
+            link = user_json["user_farmlinks"][str(usr)]
+            announce_string+= f"{this_usr.mention}: {link} \n"
+
+    await FIXED_CHANNEL.send(announce_string)
+
+    
+
+# @tasks.loop(seconds=10)
+# async def check_for_reminder(channel):
+#     print("Time met")
+#     global FIXED_CHANNEL
+#     global bot
+#     announce_string = "Greetings, Hellmouth Farmers! Today is Thursday EST, so this is your reminder to get your three weekly upkeep posts in before Sunday!\n"
+#     user_json = json.load(open(JSON_NAME))
+#     for usr, remind_val in user_json["user_remind"].items():
+#         if remind_val == "True":
+#             print(usr, remind_val)
+#             await bot.wait_until_ready()
+#             this_usr = await bot.fetch_user(int(usr))
+#             link = user_json["user_farmlinks"][str(usr)]
+#             announce_string+= f"{this_usr.mention}: {link} \n"
+
+#     await FIXED_CHANNEL.send(announce_string)
 
 
 @bot.command()
@@ -44,6 +80,8 @@ async def help(ctx, *args):
     embed.add_field(name="f!edit [farm OR sheet]", value="change either your farm link or the name of your spreadsheet, respectively.", inline=False)
     embed.add_field(name="f!sync", value="If you bought an animal in the middle of the week and want to see what it will give you on Sunday, use this command to sync your farm post with your spreadsheet.", inline=False)
     embed.add_field(name="f!roll [tools OR weekly]", value="tools: roll fishing rods and bug nets to collect the rewards they provide upon finishing threads in places appropriate for them. \n weekly: your weekly farm roll. Execute this command to roll crops, randomized animals, nets and rods, and increment all animal producers. Then add all of these yields to your spreadsheet and report new total.", inline=False)
+    embed.add_field(name="f!remind [on OR off]", value="Toggle whether I ping you a reminder on Thursdays at 9am EST to make your farm upkeep posts.", inline=False)
+
     embed.set_footer(text="Questions? Encountering bugs? Ping or dm Flip in the server!")
     await ctx.send(embed=embed)
 
@@ -53,6 +91,10 @@ async def register(ctx, *args):
     #  await ctx.send('{} arguments: {}'.format(len(args), ', '.join(args)))
     await botfuncs.register_new(ctx, *args)
 
+@bot.command()
+async def remind(ctx, *args):
+    global bot
+    await botfuncs.remind_me(ctx, *args)
 
 @bot.command()
 async def roll(ctx, *args):
@@ -73,13 +115,14 @@ async def sync(ctx, *args):
 
 @bot.event
 async def on_ready():
+    global FIXED_CHANNEL
     print(f'{bot.user} has connected to Discord!!!!')
-    channel = bot.get_channel(603679783347421208) # FLIP-TESTS-BOTS-HERE CHANNEL
-    if channel:
-        await botfuncs.set_channel(channel)
+    FIXED_CHANNEL = bot.get_channel(603679783347421208) # FLIP-TESTS-BOTS-HERE CHANNEL
+    if FIXED_CHANNEL:
+        await botfuncs.set_channel(FIXED_CHANNEL)
     else:
-        print("Failed.", type(channel))
-    check_for_rolling.start(channel)
+        print("Failed.", type(FIXED_CHANNEL))
+    # check_for_reminder.start(FIXED_CHANNEL)
     
     await botfuncs.set_bot(bot) # set the botfuncs.py bot to this bot so we can keep track
     await botfuncs.initialize_client() # boot up google spreadsheet client

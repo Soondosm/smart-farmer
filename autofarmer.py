@@ -28,9 +28,7 @@ async def get_info(farm_html, sheet):
     return RESULT_STRING
 
 
-
 async def run_main(sheet_name, URL, ctx):
-    # URL = "https://hxllmth.jcink.net/index.php?showtopic=1121" #ice's farm
     job_elements = await botfuncs.selenium_login(URL)
     client = await botfuncs.get_client()
     #Fetch the sheet

@@ -222,7 +222,7 @@ async def handle_all_animals(farm_html, sheet):
 # MISC (TOOLS)
 def handle_misc(farm_html, total_locs, product_locs):
     RESULT_STRING = []
-    RESULT_STRING.append("**RODS AND NETS**: \n")
+    RESULT_STRING.append("**RODS AND NETS** \n")
     count = 0
     for item in tool_list:
         if item in str(farm_html).lower():
@@ -289,10 +289,31 @@ async def check_valid_URL(url):
         all_crop_html = vals[0].find_all("div", class_="farming")
         all_animal_html = vals[0].find_all("div", class_="ranching")
         if len(all_crop_html) or len(all_animal_html) > 0:
-            return True
+            return True, vals
 
 
 
+async def remind_me(ctx, *args):
+    this_usr = ctx.message.author
+    user_json = json.load(open(JSON_NAME))
+    if len(args) <1:
+        await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+    elif args[0].lower() == "off":
+        if user_json["user_remind"][str(this_usr.id)] == "Off":
+            await ctx.send(f"{this_usr.nick}, you have already opted not to be pinged for reminders.")
+        else:
+            user_json["user_remind"][str(this_usr.id)] = "Off"
+            await ctx.send(f"{this_usr.nick}, you will no longer be pinged for upkeep post reminders.")
+            with open(JSON_NAME, 'w', encoding='utf-8') as f:
+                json.dump(user_json, f, ensure_ascii=False, indent=4) # save
+    elif args[0].lower() == "on":
+        if user_json["user_remind"][str(this_usr.id)] == "On":
+            await ctx.send(f"{this_usr.nick}, you have already opted into being pinged for reminders.")
+        else:
+            user_json["user_remind"][str(this_usr.id)] = "On"
+            await ctx.send(f"{this_usr.nick}, you will now be pinged for upkeep post reminders!")
+            with open(JSON_NAME, 'w', encoding='utf-8') as f:
+                json.dump(user_json, f, ensure_ascii=False, indent=4) # save
 
 
 
@@ -319,12 +340,14 @@ async def register_new(ctx, *args):
 
         msg = await bot.wait_for("message", check=check)
         await ctx.send(VALID_STR)
-        if await check_valid_URL(msg.content) == True:
+        booli, job_elements = await check_valid_URL(msg.content)
+        if booli == True:
             user_json["user_sheets"][str(this_usr.id)] = sheet_name
             user_json["user_farmlinks"][str(this_usr.id)] = msg.content
+            user_json["user_remind"][str(this_usr.id)] = "False"
             print(user_json)
             sheet = client.open(sheet_name).sheet1
-            job_elements = await selenium_login(msg.content)
+            # job_elements = await selenium_login(msg.content)
             await handle_all_animals(job_elements[0], sheet)
             with open(JSON_NAME, 'w', encoding='utf-8') as f:
                 json.dump(user_json, f, ensure_ascii=False, indent=4) # save
@@ -362,23 +385,28 @@ async def show_farm(ctx, *args):
     user_json = json.load(open(JSON_NAME))
     if str(ctx.message.author.id) not in user_json["user_sheets"]:
         await ctx.send(f"{this_usr.name}" + YOUDONTHAVEAFARM)
-    elif len(args) < 1:
+    else:
         sheet = client.open(user_json["user_sheets"][str(this_usr.id)]).sheet1
         ani_names = sheet.col_values(1)
         num_anis = sheet.col_values(2)
         prod_names = sheet.col_values(4)
         perweek_vals = sheet.col_values(5)
-        print(len(ani_names), len(num_anis), len(prod_names), len(perweek_vals))
-        embed=discord.Embed(title=user_json["user_sheets"][str(this_usr.id)],
-            url=user_json["user_farmlinks"][str(this_usr.id)])
-        embed.set_thumbnail(url=this_usr.avatar_url)
-        embed.set_author(name=f"{this_usr.name}'s weekly farm produce")
-        for i in range(1, len(num_anis)): # skip title row
-            if int(num_anis[i]) > 0 and ani_names[i] != "pig":
-                embed.add_field(name=f"{prod_names[i]} from {num_anis[i]} {ani_names[i]}", value=str(perweek_vals[i]), inline=True)
-        await ctx.send(embed=embed)
-    elif args[0].lower() == 'crop' or args[0].lower() == 'crops':
-        print()
+        if len(args) < 1:
+            is_reminding = user_json["user_remind"][str(this_usr.id)]
+            print(len(ani_names), len(num_anis), len(prod_names), len(perweek_vals))
+            embed=discord.Embed(title=user_json["user_sheets"][str(this_usr.id)],
+                url=user_json["user_farmlinks"][str(this_usr.id)])
+            embed.set_thumbnail(url=this_usr.avatar_url)
+            embed.set_author(name=f"{this_usr.name}'s weekly farm produce")
+            embed.set_footer(text=f"Ping Reminders: {is_reminding}")
+            for i in range(1, len(num_anis)): # skip title row
+                if int(num_anis[i]) > 0 and ani_names[i] != "pig":
+                    embed.add_field(name=f"{prod_names[i]} from {num_anis[i]} {ani_names[i]}", value=str(perweek_vals[i]), inline=True)
+            await ctx.send(embed=embed)
+        elif args[0].lower() == 'crop' or args[0].lower() == 'crops':
+            print()
+        elif args[0].lower() == 'misc' or args[0].lower() == 'tool' or args[0].lower() == 'tools':
+            print()
 
 async def edit_info(ctx, *args):
     global bot
@@ -395,7 +423,8 @@ async def edit_info(ctx, *args):
                 return 'hxllmth.jcink.net' in m.content and m.channel == channel and m.author == ctx.author
             msg = await bot.wait_for("message", check=check)
             await ctx.send(VALID_STR)
-            if await check_valid_URL(msg.content) == True:
+            booli, vals = await check_valid_URL(msg.content)
+            if booli == True:
                 user_json["user_farmlinks"][str(this_usr.id)] = msg.content
                 with open(JSON_NAME, 'w', encoding='utf-8') as f:
                     json.dump(user_json, f, ensure_ascii=False, indent=4)
