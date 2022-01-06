@@ -10,6 +10,7 @@ from bs4 import BeautifulSoup
 from selenium import webdriver
 import numpy as np
 import autofarmer
+import show_details
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -110,22 +111,7 @@ async def initialize_client():
 ########################## ANIMAL FUNCTIONS ########################################
 ############################################################################
 
-def strip_animal(this_animal):
-    this_animal = re.sub('<[^<]+?>', '', str(this_animal))
-    # print(this_animal)
-    this_animal = re.sub(r"[\([{})\]]", '', str(this_animal))
-    # print(this_animal)
-    this_animal = re.split(';|!| |, |\*|\n', str(this_animal))
-    # print(this_animal)
-    while '' in this_animal:
-        this_animal.remove('')
-    index = 0
-    # for s in this_animal[index]:
-    if this_animal[index][0].isdigit():
-        index +=1
-    this_animal = this_animal = this_animal[index].lower()
-    # print(this_animal)
-    return this_animal
+
 
 
 def get_num_redhearts(all_hearts):
@@ -203,7 +189,7 @@ async def handle_all_animals(farm_html, sheet):
         this_hearts = aminal.find_all('span')
         this_animal = aminal.find_all('h2')
         # print(this_animal)
-        pretty_animal = strip_animal(this_animal[0])
+        pretty_animal = show_details.strip_animal(this_animal[0])
         if pretty_animal == "orange": pretty_animal = "orange cat"
         elif pretty_animal == "black": pretty_animal = "black cat"
         num_animal, num_hearts = get_num_animals(this_hearts, this_animal[0])
@@ -236,17 +222,6 @@ def handle_misc(farm_html, total_locs, product_locs):
         RESULT_STRING.append("You have no rods or nets.\n")
     return total_locs, RESULT_STRING
 
-def get_tools(farm_html):
-    str_of_tools = "**You have the following:** \n"
-    for i in range(len(tool_list)):
-        if tool_list[i] in str(farm_html).lower():
-            str_of_tools += tool_list[i]
-            if i < len(tool_list)-1:
-                str_of_tools+= ", "
-    return str_of_tools
-
-def get_crops():
-    print()
 
 
 # GET ALL SPREADSHEETS SHARED WITH GOOGLE ACCOUNT
@@ -403,10 +378,16 @@ async def show_farm(ctx, *args):
                 if int(num_anis[i]) > 0 and ani_names[i] != "pig":
                     embed.add_field(name=f"{prod_names[i]} from {num_anis[i]} {ani_names[i]}", value=str(perweek_vals[i]), inline=True)
             await ctx.send(embed=embed)
-        elif args[0].lower() == 'crop' or args[0].lower() == 'crops':
-            print()
-        elif args[0].lower() == 'misc' or args[0].lower() == 'tool' or args[0].lower() == 'tools':
-            print()
+        else:
+            await ctx.send("Please wait a moment while I fetch your farm's page...")
+            farm_html = await selenium_login(user_json["user_farmlinks"][str(this_usr.id)])
+            if args[0].lower() == 'crop' or args[0].lower() == 'crops':
+                embed = show_details.show_crop_info(farm_html[0], sheet,user_json["user_farmlinks"][str(this_usr.id)], this_usr, user_json["user_sheets"][str(this_usr.id)])
+                await ctx.send(embed=embed)
+            elif args[0].lower() == 'misc' or args[0].lower() == 'tool' or args[0].lower() == 'tools':
+                await ctx.send(f"{this_usr.mention}, you have the following tools and special animals:")
+                string_response = show_details.show_misc_info(farm_html[0], sheet,user_json["user_farmlinks"][str(this_usr.id)], this_usr, user_json["user_sheets"][str(this_usr.id)])
+                await ctx.send(string_response)
 
 async def edit_info(ctx, *args):
     global bot
@@ -463,7 +444,7 @@ async def roll_items(ctx, *args):
             await ctx.send("Fetching the tools from your farm page...")
             farm_html = await selenium_login(user_json["user_farmlinks"][str(this_usr.id)])
             sheet = client.open(user_json["user_sheets"][str(this_usr.id)]).sheet1
-            tool_list = get_tools(farm_html)
+            tool_list = show_details.get_tools(farm_html)
             await ctx.send(tool_list + f"\n {this_usr.nick}, to roll for these, type `yes` or `y`:")
             def check(m):
                 return m.channel == channel and m.author == ctx.author

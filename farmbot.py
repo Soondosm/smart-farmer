@@ -117,7 +117,7 @@ async def sync(ctx, *args):
 async def on_ready():
     global FIXED_CHANNEL
     print(f'{bot.user} has connected to Discord!!!!')
-    FIXED_CHANNEL = bot.get_channel(603679783347421208) # FLIP-TESTS-BOTS-HERE CHANNEL
+    FIXED_CHANNEL = bot.get_channel(603679783347421208) # FLIP-TESTS-BOTS-HERE CHANNEL # 928542342242254889
     if FIXED_CHANNEL:
         await botfuncs.set_channel(FIXED_CHANNEL)
     else:

@@ -9,7 +9,7 @@ nltk.download('omw-1.4')
 from nltk.stem import WordNetLemmatizer
 import random
 import numpy as np
-
+import show_details
 # import farmbot #import discord bot companion functionality
 import botfuncs
 import time
@@ -108,7 +108,7 @@ async def handle_all_crops(farm_html, sheet):
     RESULT_STRING.append("\n**CROPS**")
     for crop in all_crop_html:
         crop = crop.find_all('h2')
-        crop_name = botfuncs.strip_animal(crop)
+        crop_name = show_details.strip_animal(crop)
         if crop_name == "tea":
             crop_name += " leaf"
         elif crop_name == "bok":
