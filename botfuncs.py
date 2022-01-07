@@ -328,18 +328,18 @@ async def remind_me(ctx, *args):
         await ctx.send(f"The usage for this command is:\n`f!remind on` - turn on ping notifications thursday morning \n`f!remind off` - turn off ping notifications")
     elif args[0].lower() == "off":
         if user_json["user_remind"][str(this_usr.id)] == "Off":
-            await ctx.send(f"{this_usr.nick}, you have already opted not to be pinged for reminders.")
+            await ctx.send(f"{this_usr.name}, you have already opted not to be pinged for reminders.")
         else:
             user_json["user_remind"][str(this_usr.id)] = "Off"
-            await ctx.send(f"{this_usr.nick}, you will no longer be pinged for upkeep post reminders.")
+            await ctx.send(f"{this_usr.name}, you will no longer be pinged for upkeep post reminders.")
             with open(JSON_NAME, 'w', encoding='utf-8') as f:
                 json.dump(user_json, f, ensure_ascii=False, indent=4) # save
     elif args[0].lower() == "on":
         if user_json["user_remind"][str(this_usr.id)] == "On":
-            await ctx.send(f"{this_usr.nick}, you have already opted into being pinged for reminders.")
+            await ctx.send(f"{this_usr.name}, you have already opted into being pinged for reminders.")
         else:
             user_json["user_remind"][str(this_usr.id)] = "On"
-            await ctx.send(f"{this_usr.nick}, you will now be pinged for upkeep post reminders!")
+            await ctx.send(f"{this_usr.name}, you will now be pinged for upkeep post reminders!")
             with open(JSON_NAME, 'w', encoding='utf-8') as f:
                 json.dump(user_json, f, ensure_ascii=False, indent=4) # save
 
@@ -379,9 +379,9 @@ async def register_new(ctx, *args):
             await handle_all_animals(job_elements[0], sheet)
             with open(JSON_NAME, 'w', encoding='utf-8') as f:
                 json.dump(user_json, f, ensure_ascii=False, indent=4) # save
-            await ctx.send(f"Thank you {this_usr.nick}! Your farm is registered and your spreadsheet **{sheet_name}** should now be updated with your farm's data!")
+            await ctx.send(f"Thank you {this_usr.name}! Your farm is registered and your spreadsheet **{sheet_name}** should now be updated with your farm's data!")
         else:
-            await ctx.send(f"{this_usr.nick}, that is not a valid link. Please try again.")
+            await ctx.send(f"{this_usr.name}, that is not a valid link. Please try again.")
  
     elif this_usr not in current_sheets: # if google sheet is not shared yet to email
         await ctx.send(
@@ -395,7 +395,7 @@ async def sync_sheet(ctx, *args):
     this_usr = ctx.message.author
     user_json = json.load(open(JSON_NAME))
     if str(this_usr.id) not in user_json["user_sheets"]:
-        await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+        await ctx.send(f"{this_usr.name}" + YOUDONTHAVEAFARM)
     else:
         await ctx.send(f"Please wait a moment for the web scraper to fetch your farm.")
         sheet_name = user_json["user_sheets"][str(this_usr.id)]
@@ -403,7 +403,7 @@ async def sync_sheet(ctx, *args):
         sheet = client.open(sheet_name).sheet1
         job_elements = await selenium_login(url)
         await handle_all_animals(job_elements[0], sheet)
-        await ctx.send(f"{this_usr.nick}, your spreadsheet has been successfully updated from your most current farm post!")
+        await ctx.send(f"{this_usr.name}, your spreadsheet has been successfully updated from your most current farm post!")
 
 
 async def show_farm(ctx, *args):
@@ -479,7 +479,7 @@ async def edit_info(ctx, *args):
         user_json = json.load(open(JSON_NAME))
         this_usr = ctx.message.author
         if str(this_usr.id) not in user_json["user_sheets"]:
-            await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+            await ctx.send(f"{this_usr.name}" + YOUDONTHAVEAFARM)
         elif args[0].lower() == 'farm':
             await ctx.send("Please copy and paste your new farm URL now.")
             def check(m):
@@ -521,13 +521,13 @@ async def roll_items(ctx, *args):
         user_json = json.load(open(JSON_NAME))
         this_usr = ctx.message.author
         if str(this_usr.id) not in user_json["user_sheets"]:
-            await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+            await ctx.send(f"{this_usr.name}" + YOUDONTHAVEAFARM)
         elif args[0].lower() == 'tools':
             await ctx.send("Fetching the tools from your farm page...")
             farm_html = await selenium_login(user_json["user_farmlinks"][str(this_usr.id)])
             sheet = client.open(user_json["user_sheets"][str(this_usr.id)]).sheet1
             tool_list = show_details.get_tools(farm_html)
-            await ctx.send(tool_list + f"\n {this_usr.nick}, to roll for these, type `yes` or `y`:")
+            await ctx.send(tool_list + f"\n {this_usr.name}, to roll for these, type `yes` or `y`:")
             def check(m):
                 return m.channel == ctx.channel and m.author == ctx.author
             msg = await bot.wait_for("message", check=check)
@@ -545,14 +545,17 @@ async def roll_items(ctx, *args):
         elif args[0].lower() == 'weekly':
             this_sheet = user_json["user_sheets"][str(this_usr.id)]
             await ctx.send(
-            f"{this_usr.mention}, this will increment all of your animal produce" +
+            f"{this_usr.mention}, this will collect your farm's information from your FIRST farm post on hellmouth, increment all of your animal produce" +
             f" and execute all crop, tool, and special animal rolls, and" + 
             f" automatically append them to your sheet: \n **{this_sheet}**\n" + 
-            f"Are you sure you want to roll? Type `yes`/`y` or `no`/`n`")
+            f"\nIF YOU ARE BUTCHERING ANIMALS ON YOUR FARM, DELETE THEM FROM YOUR FARM POST *BEFORE* YOU ROLL!\n"
+            f"\nAre you sure you want to roll? Type `yes`/`y` or `no`/`n`")
             def check(m):
                 return m.channel == ctx.channel and m.author == ctx.author
             msg = await bot.wait_for("message", check=check)
             if msg.content.lower() == "yes" or msg.content.lower() == "y":
-                await ctx.send(f"Rolling for {this_usr.nick} now...")
+                await ctx.send(f"Rolling for {this_usr.name} now...")
                 await autofarmer.run_main(this_sheet, user_json["user_farmlinks"][str(this_usr.id)], ctx)
+            else:
+                await ctx.send(f"Cancelling {this_usr.name}'s roll.")
             
