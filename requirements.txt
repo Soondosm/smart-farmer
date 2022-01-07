@@ -3,3 +3,6 @@ asyncio
 python-dotenv
 nltk
 numpy
+requests
+gspread
+apiclient
