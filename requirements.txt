@@ -6,3 +6,5 @@ numpy
 requests
 gspread
 apiclient
+selenium
+bs4
