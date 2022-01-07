@@ -83,13 +83,23 @@ def show_crop_info(farm_html, sheet, url,this_usr, sheet_name):
     return embed
 
 def show_misc_info(farm_html, sheet, url, this_usr, sheet_name):
+    this_str = ""
     locs = sheet.col_values(1) # get all animal names
     raccoon_row = locs.index("raccoon")+1
     num_racroll = (int(sheet.cell(raccoon_row, 2).value) + int(sheet.cell(raccoon_row, 3).value)) * 3 #num animal + num animals with red hearts
     penguin_row = locs.index("penguin")+1
-    num_penroll = (int(sheet.cell(penguin_row, 2).value) + int(sheet.cell(penguin_row, 3).value)) * 3 #num animal +
-    this_str = get_tools(farm_html)
+    num_penroll = ((int(sheet.cell(penguin_row, 2).value) + int(sheet.cell(penguin_row, 3).value))*2) * 3 #num animal +
+    if "harvest cloak" in str(farm_html).lower():
+        this_str += "You have a *harvest cloak*! For each seed planted, you will yield one additional harvest.\n"
+    if "t1 supplier" in str(farm_html).lower() or "supplier t1" in str(farm_html).lower():
+        this_str += "**T1 Supplier** - obtain 1d5 common materials.\n"
+    if "t2 supplier" in str(farm_html).lower() or "supplier t2" in str(farm_html).lower():
+        this_str += "**T2 Supplier** - obtain 1d5 uncommon materials.\n"
+    if "t3 supplier" in str(farm_html).lower() or "supplier t3" in str(farm_html).lower():
+        this_str += "**T3 Supplier** - obtain 1d5 rare materials.\n"
+    this_str += get_tools(farm_html)
     if num_racroll > 0:
+        print(int(sheet.cell(raccoon_row, 2).value), int(sheet.cell(raccoon_row, 3).value))
         this_str += "You will get " + str(num_racroll) + " **raccoon** products of common rarity (herb, vegetable, fruit, grain, ore, wood, bug, thread.).\n"
     if num_penroll > 0:
         this_str += "You will get " + str(num_penroll) + " **penguin** ores of different possible rarities (common, uncommon, rare). \n"
@@ -109,11 +119,8 @@ def get_tools(farm_html):
 # STRIP STUFF AWAY FROM ANIMALS AND CROPS
 def strip_animal(this_animal):
     this_animal = re.sub('<[^<]+?>', '', str(this_animal))
-    # print(this_animal)
     this_animal = re.sub(r"[\([{})\]]", '', str(this_animal))
-    # print(this_animal)
     this_animal = re.split(';|!| |, |\*|\n', str(this_animal))
-    # print(this_animal)
     while '' in this_animal:
         this_animal.remove('')
     index = 0

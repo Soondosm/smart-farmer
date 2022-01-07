@@ -48,6 +48,9 @@ client = None
 
 tool_list = ["wooden fishing rod", "silver fishing rod", "golden fishing rod", "wooden bug net",
 "silver bug net", "golden bug net"]
+
+supplier_mats = ["Thread", "Hide", "Ore", "Wood", "Fish", "Bug", "Fruit", "Herb", "Vegetable", "Grain"]
+
 toolYield = {
     tool_list[0]: "Common Fish",
     tool_list[1]: "Uncommon Fish",
@@ -76,8 +79,8 @@ async def set_channel(new_channel):
     channel = new_channel
 
 
-async def print_to_channel(msg):
-    await channel.send(msg)
+async def print_to_channel(msg, ctx):
+    await ctx.channel.send(msg)
 
 async def triggerTrue(state):
     global isActive
@@ -130,16 +133,21 @@ def get_num_animals(this_hearts, this_animal):
         num_animals = 2
     elif '3' in str(this_animal) and len(all_hearts) < 3:
         num_animals = 3
-    # print(this_animal, "num animals: ", len(all_hearts), "num red: ", num_redhearts)
+        if num_redhearts > 0: num_redhearts=3
+    # if num_animals > len(all_hearts) and num_animals < num_redhearts and num_redhearts <=len(all_hearts):
+    #     num_redhearts = num_animals #if, say, we have three cows but only one redheart on display, that means all three cows are red
+    if "coon" in this_animal:
+        print(this_animal, len(all_hearts), "..." , num_animals, num_redhearts)
     # if this_animal
     return num_animals, num_redhearts
 
 def get_per_week(num_animals, num_redhearts, locs):
     per_week = [] #array to hold each animal set's total output per week (assuming 3 posts week)
+    nrh = np.copy(num_redhearts)
     for i in range(len(num_animals)):
         if locs[i] == "jackalope":
-            num_redhearts[i] = num_redhearts[i]*2
-        per_week.append(((num_animals[i]*2) + num_redhearts[i])*3)
+            nrh[i] = nrh[i]*2
+        per_week.append(str(((num_animals[i]*2) + nrh[i])*3))
     return per_week
 
 def sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet):
@@ -164,12 +172,13 @@ def sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet):
         else:
             rownum = locs.index(animal_names[i]) #+1 # row number of the animal we're considering
         new_animal_col[rownum] = [num_animals[i]]
+        if animal_names[i] == "raccoon": print(new_redhearts_col[rownum], num_redhearts[i])
         new_redhearts_col[rownum] = [str(num_redhearts[i])]
         if locs[rownum] == "pig" or locs[rownum] == "raccoon":
             new_perweek[rownum] = ["NA"]
         else:
             new_perweek[rownum] = [per_week[i]]
-        print("updating", animal_names[i])
+        # print("updating", animal_names[i])
     sheet.update('B:B', new_animal_col.tolist()) #DATA MUST BE PRESENTED AS 2D ARRAY
     sheet.update('C:C', new_redhearts_col.tolist())
     sheet.update('E:E', new_perweek.tolist())
@@ -193,8 +202,10 @@ async def handle_all_animals(farm_html, sheet):
         if pretty_animal == "orange": pretty_animal = "orange cat"
         elif pretty_animal == "black": pretty_animal = "black cat"
         num_animal, num_hearts = get_num_animals(this_hearts, this_animal[0])
-        # print("Animal:", pretty_animal, " no:", num_animal, " no. w/ red hearts:", num_hearts)
+        if pretty_animal == "raccoon":
+            print("Animal:", pretty_animal, " no:", num_animal, " no. w/ red hearts:", num_hearts)
         animal_names.append(pretty_animal); num_animals.append(num_animal); num_redhearts.append(num_hearts)
+    print(num_redhearts)
     sync_post_to_sheet(animal_names, num_animals, num_redhearts, sheet)  
     return animal_names
 
@@ -221,6 +232,48 @@ def handle_misc(farm_html, total_locs, product_locs):
     if count == 0:
         RESULT_STRING.append("You have no rods or nets.\n")
     return total_locs, RESULT_STRING
+
+
+#SUPPLIERS (FROM SHOPS)
+def handle_suppliers(farm_html, total_locs, product_locs):
+    this_str = "**SUPPLIERS** \n"
+    count = 0
+    if "t1 supplier" in str(farm_html).lower() or "supplier t1" in str(farm_html).lower():
+        roll_result, total_locs = roll_supplier("Common ", total_locs, product_locs)
+        this_str += roll_result
+        count+=1
+
+    if "t2 supplier" in str(farm_html).lower() or "supplier t2" in str(farm_html).lower():
+        roll_result, total_locs = roll_supplier("Uncommon ", total_locs, product_locs)
+        this_str += roll_result
+        count+=1
+
+    if "t3 supplier" in str(farm_html).lower() or "supplier t3" in str(farm_html).lower():
+        roll_result, total_locs = roll_supplier("Rare ", total_locs, product_locs)
+        this_str += roll_result
+        count+=1
+    
+    if count == 0:
+        return total_locs, "You have **no suppliers** (npcs obtained as shop add-ons).\n"
+    else:
+        return total_locs, this_str
+
+
+def roll_supplier(rarity, total_locs, product_locs):
+    this_roll = random.randint(1, 5)
+    if "Common" in rarity:
+        roll_str = "**T1 Supplier**: "
+    elif "Uncommon" in rarity:
+        roll_str = "**T2 Supplier**: "
+    elif "Rare" in rarity:
+        roll_str = "**T3 Supplier**: "
+    for prod in supplier_mats:
+        this_mat = rarity+prod # 'Common + Herb'
+        tot_index = product_locs.index(this_mat)
+        total_locs[tot_index] = int(total_locs[tot_index]) + int(this_roll)
+    roll_str += f"1d5= **{this_roll} {rarity.upper()}** {', '.join(supplier_mats)}\n"
+    return roll_str, total_locs
+
 
 
 
@@ -272,7 +325,7 @@ async def remind_me(ctx, *args):
     this_usr = ctx.message.author
     user_json = json.load(open(JSON_NAME))
     if len(args) <1:
-        await ctx.send(f"{this_usr.nick}" + YOUDONTHAVEAFARM)
+        await ctx.send(f"The usage for this command is:\n`f!remind on` - turn on ping notifications thursday morning \n`f!remind off` - turn off ping notifications")
     elif args[0].lower() == "off":
         if user_json["user_remind"][str(this_usr.id)] == "Off":
             await ctx.send(f"{this_usr.nick}, you have already opted not to be pinged for reminders.")
@@ -311,7 +364,7 @@ async def register_new(ctx, *args):
         "{}, you are adding the spreadsheet named {}.".format(this_usr.mention, sheet_name))
         await ctx.send("Please copy and paste your farm's **HELLMOUTH** URL now.")
         def check(m):
-            return 'hxllmth.jcink.net' in m.content and m.channel == channel and m.author == ctx.author
+            return 'hxllmth.jcink.net' in m.content and m.author == ctx.author
 
         msg = await bot.wait_for("message", check=check)
         await ctx.send(VALID_STR)
@@ -368,7 +421,7 @@ async def show_farm(ctx, *args):
         perweek_vals = sheet.col_values(5)
         if len(args) < 1:
             is_reminding = user_json["user_remind"][str(this_usr.id)]
-            print(len(ani_names), len(num_anis), len(prod_names), len(perweek_vals))
+            # print(len(ani_names), len(num_anis), len(prod_names), len(perweek_vals))
             embed=discord.Embed(title=user_json["user_sheets"][str(this_usr.id)],
                 url=user_json["user_farmlinks"][str(this_usr.id)])
             embed.set_thumbnail(url=this_usr.avatar_url)
@@ -389,6 +442,35 @@ async def show_farm(ctx, *args):
                 string_response = show_details.show_misc_info(farm_html[0], sheet,user_json["user_farmlinks"][str(this_usr.id)], this_usr, user_json["user_sheets"][str(this_usr.id)])
                 await ctx.send(string_response)
 
+
+
+
+async def inventory(ctx, *args):
+    global bot
+    global client
+    this_usr = ctx.message.author
+    user_json = json.load(open(JSON_NAME))
+    if str(ctx.message.author.id) not in user_json["user_sheets"]:
+        await ctx.send(f"{this_usr.name}" + YOUDONTHAVEAFARM)
+    else:
+        sheet = client.open(user_json["user_sheets"][str(this_usr.id)]).sheet1
+        prod_names = sheet.col_values(4)
+        total_vals = sheet.col_values(6)
+        is_reminding = user_json["user_remind"][str(this_usr.id)]
+        embed=discord.Embed(title=user_json["user_sheets"][str(this_usr.id)],
+            url=user_json["user_farmlinks"][str(this_usr.id)])
+        embed.set_thumbnail(url=this_usr.avatar_url)
+        embed.set_author(name=f"{this_usr.name}'s Inventory")
+        embed.set_footer(text=f"Ping Reminders: {is_reminding}")
+        for i in range(1, len(total_vals)): # skip title row
+                if prod_names[i] != "NA" and total_vals[i] != "NA" and total_vals[i] != '0':
+                    embed.add_field(name=f"{prod_names[i]}", value=str(total_vals[i]), inline=True)
+        await ctx.send(embed=embed)
+
+
+
+
+
 async def edit_info(ctx, *args):
     global bot
     if len(args) < 1:
@@ -401,7 +483,7 @@ async def edit_info(ctx, *args):
         elif args[0].lower() == 'farm':
             await ctx.send("Please copy and paste your new farm URL now.")
             def check(m):
-                return 'hxllmth.jcink.net' in m.content and m.channel == channel and m.author == ctx.author
+                return 'hxllmth.jcink.net' in m.content and m.channel == ctx.channel and m.author == ctx.author
             msg = await bot.wait_for("message", check=check)
             await ctx.send(VALID_STR)
             booli, vals = await check_valid_URL(msg.content)
@@ -415,7 +497,7 @@ async def edit_info(ctx, *args):
         elif args[0].lower() == 'sheet':
             await ctx.send("Please copy and paste your new spreadsheet's name now. IT IS CASE-SENSITIVE:")
             def check(m):
-                return m.channel == channel and m.author == ctx.author
+                return m.channel == ctx.channel and m.author == ctx.author
             msg = await bot.wait_for("message", check=check)
             current_sheets = await obtain_current_sheets() # get sheets shared with google bot
             if msg.content in current_sheets and msg.content not in user_json["user_sheets"][str(this_usr.id)]:
@@ -447,7 +529,7 @@ async def roll_items(ctx, *args):
             tool_list = show_details.get_tools(farm_html)
             await ctx.send(tool_list + f"\n {this_usr.nick}, to roll for these, type `yes` or `y`:")
             def check(m):
-                return m.channel == channel and m.author == ctx.author
+                return m.channel == ctx.channel and m.author == ctx.author
             msg = await bot.wait_for("message", check=check)
             if msg.content.lower() == "yes" or msg.content.lower() == "y":
                 prod_names = sheet.col_values(4)
@@ -468,7 +550,7 @@ async def roll_items(ctx, *args):
             f" automatically append them to your sheet: \n **{this_sheet}**\n" + 
             f"Are you sure you want to roll? Type `yes`/`y` or `no`/`n`")
             def check(m):
-                return m.channel == channel and m.author == ctx.author
+                return m.channel == ctx.channel and m.author == ctx.author
             msg = await bot.wait_for("message", check=check)
             if msg.content.lower() == "yes" or msg.content.lower() == "y":
                 await ctx.send(f"Rolling for {this_usr.nick} now...")

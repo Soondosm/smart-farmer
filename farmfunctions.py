@@ -101,7 +101,9 @@ async def handle_all_crops(farm_html, sheet):
     product_locs = sheet.col_values(4)
     is_cloak = 0
     total_locs, strings_to_add = botfuncs.handle_misc(farm_html, total_locs, product_locs)
+    total_locs, strings_to_add2 = botfuncs.handle_suppliers(farm_html, total_locs, product_locs)
     for string in strings_to_add: RESULT_STRING.append(string)
+    RESULT_STRING.append(strings_to_add2)
     if "harvest cloak" in str(farm_html).lower():
         print("WE HAVE A CLOAAAKKKK")
         is_cloak = 1
@@ -221,10 +223,10 @@ async def get_raccoon(sheet, RESULT_STRING):
     return RESULT_STRING
 
 
-async def display_to_discord(RESULT_STRING):
+async def display_to_discord(RESULT_STRING, ctx):
     # print(len(RESULT_STRING), RESULT_STRING)
     for str in RESULT_STRING:
-       await botfuncs.print_to_channel(str)
+       await botfuncs.print_to_channel(str, ctx)
     RESULT_STRING = [] # reset
     # await botfuncs.edit_msg_content(RESULT_STRING)
     # await botfuncs.triggerTrue(True)
@@ -302,6 +304,6 @@ async def increment_total(sheet, ctx, URL, RESULT_STRING):
     RESULT_STRING = await get_penguin(sheet, RESULT_STRING)
     # botfuncs.print_embed(result_str)
     # RESULT_STRING.append(result_str)
-    await display_to_discord(RESULT_STRING)
+    await display_to_discord(RESULT_STRING, ctx)
     await ctx.send(embed=embed)
 

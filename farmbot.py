@@ -75,8 +75,9 @@ async def help(ctx, *args):
 "\nThen you are good to go! You DO NOT need to edit any values in your spreadsheet "+ 
 "because the script will fetch the number of animals for you. "+ 
 "If you already started with materials, you may edit them into the totals column.\n", color=0x3eb300)
-    embed.add_field(name="f!register (my spreadsheet name)", value="register a new farm. Your spreassheet name is case sensitive. Have your farm's URL ready, as you will be asked to enter it to complete registration. If everything was done correctly, you should see your spreadsheet populate with your farm's data.", inline=False)
+    embed.add_field(name="f!register (my spreadsheet name)", value="register a new farm. Your spreadsheet name is case sensitive. Have your farm's URL ready, as you will be asked to enter it to complete registration. If everything was done correctly, you should see your spreadsheet populate with your farm's data.", inline=False)
     embed.add_field(name="f!show", value="get the animals currently in your farm, as well as their weekly produce.", inline=False)
+    embed.add_field(name="f!inventory", value="Grab your totals column from your spreadsheet to neatly display all your materials. Ignores zeros.", inline=False)
     embed.add_field(name="f!edit [farm OR sheet]", value="change either your farm link or the name of your spreadsheet, respectively.", inline=False)
     embed.add_field(name="f!sync", value="If you bought an animal in the middle of the week and want to see what it will give you on Sunday, use this command to sync your farm post with your spreadsheet.", inline=False)
     embed.add_field(name="f!roll [tools OR weekly]", value="tools: roll fishing rods and bug nets to collect the rewards they provide upon finishing threads in places appropriate for them. \n weekly: your weekly farm roll. Execute this command to roll crops, randomized animals, nets and rods, and increment all animal producers. Then add all of these yields to your spreadsheet and report new total.", inline=False)
@@ -110,6 +111,10 @@ async def show(ctx, *args):
     await botfuncs.show_farm(ctx, *args)
 
 @bot.command()
+async def inventory(ctx, *args):
+    await botfuncs.inventory(ctx, *args)
+
+@bot.command()
 async def sync(ctx, *args):
     await botfuncs.sync_sheet(ctx, *args)
 
@@ -117,7 +122,7 @@ async def sync(ctx, *args):
 async def on_ready():
     global FIXED_CHANNEL
     print(f'{bot.user} has connected to Discord!!!!')
-    FIXED_CHANNEL = bot.get_channel(603679783347421208) # FLIP-TESTS-BOTS-HERE CHANNEL # 928542342242254889
+    FIXED_CHANNEL = bot.get_channel(928542342242254889) # FLIP-TESTS-BOTS-HERE CHANNEL #       603679783347421208
     if FIXED_CHANNEL:
         await botfuncs.set_channel(FIXED_CHANNEL)
     else:
