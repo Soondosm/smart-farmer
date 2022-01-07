@@ -1,5 +1,5 @@
 discord.py
 asyncio
-dotenv
+python-dotenv
 nltk
 numpy

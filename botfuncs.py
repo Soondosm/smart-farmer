@@ -1,5 +1,4 @@
 import discord
-from dotenv import load_dotenv
 from discord.ext import commands
 from discord.ext import tasks
 import json
@@ -19,6 +18,7 @@ import re
 import gspread
 # from gspread.models import Cell
 from oauth2client.service_account import ServiceAccountCredentials
+from dotenv import load_dotenv
 
 
 # https://hxllmth.jcink.net/index.php?showtopic=1121 # ICEGUIN'S FARM
